@@ -4,6 +4,7 @@ from typing import Literal
 from datetime import datetime
 import re
 from .functions import fechar_excel
+import traceback
 
 class Logs:
     @property
@@ -20,7 +21,7 @@ class Logs:
         if not os.path.exists(self.path_folder):
             os.makedirs(self.path_folder)
             
-    def register(self, *, status:Literal['Error', 'Concluido'], exception:str, file:str="Logs_Operation.csv", date_format:str='%d/%m/%Y %H:%M:%S'):
+    def register(self, *, status:Literal['Error', 'Concluido'],  description:str,exception:str=traceback.format_exc(), file:str="Logs_Operation.csv", date_format:str='%d/%m/%Y %H:%M:%S'):
         if not file.endswith('.csv'):
             file += '.csv'
         
@@ -29,6 +30,8 @@ class Logs:
         exception = str(exception)
         exception = re.sub(r'\n', ' <br> ', exception)
         
+        description = re.sub(r'\n', ' <br> ', description)
+        
         exist:bool = os.path.exists(file_path)
         
         for _ in range(2):
@@ -36,8 +39,8 @@ class Logs:
                 with open(file_path, 'a', encoding='utf-8', newline='') as _file:
                     csv_writer = csv.writer(_file, delimiter=';')
                     if not exist:
-                        csv_writer.writerow(["Date", "Name", "Status", "Description"])
-                    csv_writer.writerow([datetime.now().strftime(date_format), self.name, status, exception])
+                        csv_writer.writerow(["Date", "Name", "Status", "Description", "Exception"])
+                    csv_writer.writerow([datetime.now().strftime(date_format), self.name, status, description, exception])
                     return
             except PermissionError:
                 fechar_excel(file)
@@ -47,4 +50,4 @@ class Logs:
         
 
 if __name__ == "__main__":
-    pass
+    Logs().register(status='Concluido', description="Test")

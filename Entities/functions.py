@@ -36,7 +36,7 @@ def verificar_arquivos_download(path:str, *,timeout:int=60 * 15, wait:int=0) -> 
         for _ in range(timeout):
             exist:bool = False
             for file in os.listdir(path):
-                if file.endswith('.crdownload'):
+                if '.crdownload' in file:
                     exist = True
             if not exist:
                 sleep(2)
