@@ -1,21 +1,10 @@
 import os
 import re
-from .dictionary.dictionary import codigo_disciplina, etapa_projetos
-from typing import List
+from .dictionary.dictionary import CODIGO_DISCIPLINA, ETAPA_PROJETOS, SUB_PASTAS
+from typing import List, Dict
 import shutil
-from .functions import tratar_nome_arquivo
+from .functions import tratar_nome_arquivo, P
 from Entities.logs import Logs
-
-#\XXXX-ANÁLISES CRITICAS
-subAnalisesCriticas = [
-    "ARQL", "CONT", "DECO", "ESTC", "LOCP", "PALV", "PCES"
-]
-
-#XXXX-INSTALAÇÕES
-subInstalacoess = [
-    "AQUE", "CLEX", "DREN", "ELET", "PISC", "PRES"
-]
-
 
 
 class EmpreendimentoFolder:
@@ -110,41 +99,61 @@ class EmpreendimentoFolder:
         #emp_folder = os.path.join(emp_folder, f"{self.centro}-PROJETOS")
         return emp_folder
     
-    def __identificar_caminho_final(self, *, arquivo_original:str, target:str):
+    def __identificar_caminho_final(self, *, arquivo_original:str, target:str, **kargs):
         target = self.__preparar_caminho(target)
-        
-        
+
         codigos_arquivos_procurar:re.Match|None = re.search(self.pattern, arquivo_original)
         if not codigos_arquivos_procurar is None:
             codigos_arquivos:list = str(codigos_arquivos_procurar.group()).split('-')
             codigo_disciplina_arquivo = codigos_arquivos[2]
-            etapa_arquivo = codigos_arquivos[3]
+            codigo_etapa_arquivo = codigos_arquivos[3]
         else:
             raise Exception(f"Arquivo não encontrado '{arquivo_original}'")
         
-        disciplina_target:str = target
-        try:
-            if subAnalisesCriticas.__contains__(codigo_disciplina_arquivo):
-                disciplina_target = os.path.join(disciplina_target, f"{self.centro}-ANÁLISES CRITICAS\\{self.centro}-{tratar_nome_arquivo(codigo_disciplina[codigo_disciplina_arquivo])}")
-            
-            elif subAnalisesCriticas.__contains__(codigo_disciplina_arquivo):
-                disciplina_target = os.path.join(disciplina_target, f"{self.centro}-INSTALAÇÕES\\{self.centro}-{tratar_nome_arquivo(codigo_disciplina[codigo_disciplina_arquivo])}")
-                            
-            else:
-                disciplina_target = os.path.join(disciplina_target, f"{self.centro}-{tratar_nome_arquivo(codigo_disciplina[codigo_disciplina_arquivo])}")
-        except:
-            disciplina_target = os.path.join(disciplina_target, f"## Não Identificado ##\\{self.centro}-{codigo_disciplina_arquivo}")
         
-        etapa_projeto_target:str = disciplina_target
-        try:
-            etapa_projeto_target = os.path.join(etapa_projeto_target, f"{tratar_nome_arquivo(etapa_projetos[etapa_arquivo])}")
-        except:
-            etapa_projeto_target = os.path.join(disciplina_target, f"## Não Identificado ##")
-            
-        final_target:str = etapa_projeto_target
+        target = self.__montar_caminhos_disciplina(target=target, codigo=codigo_disciplina_arquivo, **kargs)
+        
+        target = self.__montar_caminhos_etapa_projeto(target=target, codigo=codigo_etapa_arquivo)
+        
+        if not os.path.exists(target):
+            os.makedirs(target)
            
+        return os.path.join(target, os.path.basename(arquivo_original))
+    
+    def __montar_caminhos_disciplina(self, *, target:str, codigo:str, **kargs) -> str:
+        codigo = codigo.upper()
         
-        return os.path.join(final_target, os.path.basename(arquivo_original))
+        SELECTED_CODIGO_DISCIPLINA:dict
+        
+        CODIGO_DISCIPLINA_HERDADO:Dict[str,Dict[str,str]] = CODIGO_DISCIPLINA()
+        
+        for key,value in CODIGO_DISCIPLINA_HERDADO.items():
+            if self.centro.upper() in key.upper():
+                SELECTED_CODIGO_DISCIPLINA = value
+        
+        try:
+            disciplina = SELECTED_CODIGO_DISCIPLINA[codigo]
+            try:
+                disciplina = os.path.join(target, f"{SUB_PASTAS[codigo]}\\XXXX-{disciplina}".upper())
+            except:
+                disciplina = os.path.join(target, f"XXXX-{disciplina}".upper())
+        except:
+            disciplina = os.path.join(target, f"** Não Identificado **\\{self.centro}-{codigo}".upper())
+            
+        return disciplina.replace("XXXX", self.centro)
+    
+    def __montar_caminhos_etapa_projeto(self, *, target:str, codigo:str):
+        codigo = codigo.upper()
+        
+        etapa:str
+        try:
+            etapa = ETAPA_PROJETOS[codigo]
+            etapa = os.path.join(target, etapa.upper())
+        except:
+            etapa = os.path.join(target, f"** Não Identificado **\\--{codigo}--".upper())
+        
+        return etapa
+        
     
     def file_exist(self, _file:str) -> bool:
         """verifica se o arquivo existe na pasta
@@ -174,16 +183,17 @@ class EmpreendimentoFolder:
                 return path
         return "None"
     
-    def copy_file_to(self, *, original_file:str, target:str=""):
+    def copy_file_to(self, *, original_file:str, target:str="", **kargs):
         if target == "":
             target = self.base_path
-
-        caminho_para_salvar = self.__identificar_caminho_final(arquivo_original=original_file, target=target)
+        
+        caminho_para_salvar = self.__identificar_caminho_final(arquivo_original=original_file, target=target, **kargs)
         
         if not os.path.exists(os.path.dirname(caminho_para_salvar)):
             os.makedirs(os.path.dirname(caminho_para_salvar))
         
         shutil.copy2(original_file, caminho_para_salvar)
+        #print(P(f"arquivo salvo no caminho {caminho_para_salvar}"))
         self.logs.register(status='Concluido', description=f"Arquivo salvo no caminho {caminho_para_salvar}",exception=None)
         
     

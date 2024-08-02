@@ -329,7 +329,7 @@ class ConstruCode:
                 
             self.nav.find_element('xpath', '/html/body/div[13]/div/div[3]/button[2]').click()
             verificar_arquivos_download(self.nav.download_path, wait=1)
-            files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target) 
+            files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self) 
             
             #download dwg
             for _ in range(60):
@@ -342,14 +342,14 @@ class ConstruCode:
             self.nav.find_element('xpath', '/html/body/div[13]/div/div[2]/div[3]/label[2]/input').click()
             self.nav.find_element('xpath', '/html/body/div[13]/div/div[3]/button[2]').click()
             verificar_arquivos_download(self.nav.download_path, wait=1)
-            files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target) 
+            files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self) 
 
             sleep(1)
             print(P(f"Download do Projeto '{nome}' Concluido!"))
         except:
             print(P(f"O projeto '{nome}' tem apenas tipo de arquivo para download"))
             verificar_arquivos_download(self.nav.download_path, wait=3)
-            files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target) 
+            files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self) 
     
     @navegar
     def __listar_empreendimentos(self, centro_custo_empreendimento:list=[]) -> dict:
@@ -456,9 +456,21 @@ class ConstruCode:
         if not os.path.exists(self.disciplinas_file_path):
             self.verificar_disciplinas()
         
+        with open(self.disciplinas_file_path, 'r', encoding='utf-8')as _file:
+            empreendimentos_com_disciplina:list = list(json.load(_file).keys())
+        
         self.nav.get(self.base_link)
         empreendimentos:dict = self.__listar_empreendimentos(centro_custo_empreendimento)
         
+        empreendimentos_sem_disciplina:list = []
+        for key, value in empreendimentos.items():
+            if key in  empreendimentos_com_disciplina:
+                continue
+            else:
+                empreendimentos_sem_disciplina.append(key)
+        
+        if empreendimentos_sem_disciplina:
+            self.verificar_disciplinas(empreendimentos=empreendimentos_sem_disciplina)
         
         if not empreendimentos:
             raise Exception(f"Empreendimentos não encontrados '{centro_custo_empreendimento}'")
@@ -493,13 +505,13 @@ class ConstruCode:
         print(P("Fim da Automatação WEB!"))    
     
     @navegar    
-    def verificar_disciplinas(self, empreendimentos_urls:dict={}):
+    def verificar_disciplinas(self, empreendimentos:list=[]):
         self.nav.get(self.base_link)
         # if self.__verific_login_window():
         #     self.__login()
         
-        if not empreendimentos_urls:
-            empreendimentos_urls = self.__listar_empreendimentos()
+
+        empreendimentos_urls = self.__listar_empreendimentos(centro_custo_empreendimento=[re.search(r'[A-z]{1}[0-9]{3}', x).group() for x in empreendimentos]) #type: ignore
         
         if not empreendimentos_urls:
             raise Exception(f"Empreendimentos não encontrados '{empreendimentos_urls}'")
@@ -513,12 +525,20 @@ class ConstruCode:
                 print(P(error))
                 continue
             
-        file_name:str = self.disciplinas_file_path
-        if not os.path.exists(os.path.dirname(file_name)):
-            os.makedirs(os.path.dirname(file_name))
+        if not os.path.exists(os.path.dirname(self.disciplinas_file_path)):
+            os.makedirs(os.path.dirname(self.disciplinas_file_path))
         
-        pd.DataFrame(nomeclatura_disciplinas).to_json(file_name)
-        print(P(f"Siglas das Nomeclaturas salvas no caminho {file_name}"))
+        if os.path.exists(self.disciplinas_file_path):
+            with open(self.disciplinas_file_path, 'r', encoding='utf-8') as _file:
+                disciplinas_salvas:dict = json.load(_file)
+            for key, value in disciplinas_salvas.items():
+                if not key in nomeclatura_disciplinas:
+                    nomeclatura_disciplinas[key] = value
+            
+        
+        
+        pd.DataFrame(nomeclatura_disciplinas).to_json(self.disciplinas_file_path)
+        print(P(f"Siglas das Nomeclaturas salvas no caminho {self.disciplinas_file_path}"))
 
         
         
