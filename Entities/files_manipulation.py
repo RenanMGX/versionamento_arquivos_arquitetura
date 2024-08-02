@@ -3,6 +3,8 @@ import re
 from .dictionary.dictionary import codigo_disciplina, etapa_projetos
 from typing import List
 import shutil
+from .functions import tratar_nome_arquivo
+from Entities.logs import Logs
 
 #\XXXX-ANÁLISES CRITICAS
 subAnalisesCriticas = [
@@ -35,7 +37,7 @@ class EmpreendimentoFolder:
     
     @property
     def pattern(self) -> str:
-        return r'[A-z]{1}[0-9]{3}-[A-z0-9]{4}-[A-z0-9]{4}-[A-z0-9]{2}-[A-z0-9]{2}-[A-z0-9]{3}-[A-z0-9]+-[A-z0-9]+'
+        return r'[A-z]{1}[0-9]{3}-[\D\d]+-R[0-9]+'
     
     @property
     def centro(self) -> str:
@@ -44,6 +46,10 @@ class EmpreendimentoFolder:
         if not centro is None:
             return centro.group()
         raise Exception(f"centro de custo não foi identificado do caminho {emp_folder}")
+    
+    @property
+    def logs(self):
+        return self.__logs
     
     
     def __init__(self, *, emp_folder:str, base_path:str) -> None:
@@ -67,6 +73,8 @@ class EmpreendimentoFolder:
         
         self.__value:List[str] = self.__list_files(self.__emp_folder)
         
+        self.__logs:Logs = Logs(name="EmpreendimentoFolder")
+        
     def __str__(self) -> str:
         return self.__emp_folder
     
@@ -82,9 +90,9 @@ class EmpreendimentoFolder:
         caminhos:list = []
         for paths, folders, files in os.walk(folder):
             for file in files:
-                if (file.endswith('.pdf')) or (file.endswith(".dwg")):
-                    if re.findall(self.pattern, file):
-                        caminhos.append(os.path.join(paths, file))
+                #if (file.endswith('.pdf')) or (file.endswith(".dwg")):
+                if re.findall(self.pattern, file, re.IGNORECASE):
+                    caminhos.append(os.path.join(paths, file))
         return caminhos
     
     def __preparar_caminho(self, path:str) -> str:
@@ -117,19 +125,19 @@ class EmpreendimentoFolder:
         disciplina_target:str = target
         try:
             if subAnalisesCriticas.__contains__(codigo_disciplina_arquivo):
-                disciplina_target = os.path.join(disciplina_target, f"{self.centro}-ANÁLISES CRITICAS\\{self.centro}-{codigo_disciplina[codigo_disciplina_arquivo]}")
+                disciplina_target = os.path.join(disciplina_target, f"{self.centro}-ANÁLISES CRITICAS\\{self.centro}-{tratar_nome_arquivo(codigo_disciplina[codigo_disciplina_arquivo])}")
             
             elif subAnalisesCriticas.__contains__(codigo_disciplina_arquivo):
-                disciplina_target = os.path.join(disciplina_target, f"{self.centro}-INSTALAÇÕES\\{self.centro}-{codigo_disciplina[codigo_disciplina_arquivo]}")
+                disciplina_target = os.path.join(disciplina_target, f"{self.centro}-INSTALAÇÕES\\{self.centro}-{tratar_nome_arquivo(codigo_disciplina[codigo_disciplina_arquivo])}")
                             
             else:
-                disciplina_target = os.path.join(disciplina_target, f"{self.centro}-{codigo_disciplina[codigo_disciplina_arquivo]}")
+                disciplina_target = os.path.join(disciplina_target, f"{self.centro}-{tratar_nome_arquivo(codigo_disciplina[codigo_disciplina_arquivo])}")
         except:
             disciplina_target = os.path.join(disciplina_target, f"## Não Identificado ##\\{self.centro}-{codigo_disciplina_arquivo}")
         
         etapa_projeto_target:str = disciplina_target
         try:
-            etapa_projeto_target = os.path.join(etapa_projeto_target, f"{etapa_projetos[etapa_arquivo]}")
+            etapa_projeto_target = os.path.join(etapa_projeto_target, f"{tratar_nome_arquivo(etapa_projetos[etapa_arquivo])}")
         except:
             etapa_projeto_target = os.path.join(disciplina_target, f"## Não Identificado ##")
             
@@ -176,8 +184,8 @@ class EmpreendimentoFolder:
             os.makedirs(os.path.dirname(caminho_para_salvar))
         
         shutil.copy2(original_file, caminho_para_salvar)
+        self.logs.register(status='Concluido', description=f"Arquivo salvo no caminho {caminho_para_salvar}",exception=None)
         
-    
     
 
 class FilesManipulation:
@@ -205,7 +213,8 @@ class FilesManipulation:
                         result = re.search(centro_custo, folder, re.IGNORECASE)
                         if not result is None:
                             folder = os.path.join(folders, folder)
-                            return EmpreendimentoFolder(emp_folder=folder, base_path=self.base_path)
+                            if os.path.isdir(folder):
+                                return EmpreendimentoFolder(emp_folder=folder, base_path=self.base_path)
                 
             new_path = os.path.join(self.base_path, f"## Não Encontrados ##\\{centro_custo}")
             if not os.path.exists(new_path):

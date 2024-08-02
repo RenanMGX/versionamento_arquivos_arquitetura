@@ -6,15 +6,20 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement # for typing
 from selenium.webdriver.chrome.webdriver import WebDriver # for typing
 from Entities.files_manipulation import FilesManipulation, EmpreendimentoFolder
+from Entities.functions import Config
 from typing import List, Literal, Dict
 from time import sleep
 import shutil
 import re
 import os
 from datetime import datetime
-from .functions import P, verificar_arquivos_download
+from .functions import P, verificar_arquivos_download, tratar_nome_arquivo
 from .logs import Logs
 import traceback
+import pandas as pd
+import json
+
+DISCIPLINAS_FILE_PATH:str = os.path.join(os.getcwd(), f"Entities\\dictionary\\disciplinas.json")
 
 class LoginError(Exception):
     def __init__(self, *args: object) -> None:
@@ -27,6 +32,7 @@ class Nav(Chrome):
     @property
     def download_path(self) -> str:
         return self.__download_path
+    
     
     def __init__(self,service: Service = None, keep_alive: bool = True) -> None: #type: ignore
         self.__download_path:str = os.path.join(os.getcwd(), 'Download_Projects')
@@ -71,7 +77,7 @@ class Nav(Chrome):
             if force:
                 return super().find_element(By.TAG_NAME, 'html')
         
-        raise Exception(f"'{by}: {value}' não foi encontrado")
+        raise Exception(f"'{by}': '{value}' não foi encontrado")
 
     def find_elements(self, 
                     by:Literal["id", "class name", "css selector", "link text", "name", "partial link text", "tag name", "xpath"]="id",
@@ -118,7 +124,27 @@ class ConstruCode:
     def file_manipulation(self) -> FilesManipulation:
         return self.__file_manipulation
     
+    @property
+    def disciplinas_file_path(self):
+        return DISCIPLINAS_FILE_PATH
+    
+    
     def __init__(self, *, email:str, password:str, file_manipulation:FilesManipulation, link:str="https://next.construcode.com.br/", date:datetime=datetime.now()) -> None:
+        """
+        Inicializa uma nova instância da classe ConstruCode.
+
+        Este método inicializa os atributos da classe com os valores fornecidos e inicia a navegação para o link base.
+
+        Args:
+            email (str): O email do usuário.
+            password (str): A senha do usuário.
+            file_manipulation (FilesManipulation): Uma instância da classe FilesManipulation para manipulação de arquivos.
+            link (str, opcional): O link base para navegação. O padrão é "https://next.construcode.com.br/".
+            date (datetime, opcional): A data atual. O padrão é a data e hora atuais.
+
+        Raises:
+            TypeError: Se file_manipulation não for uma instância de FilesManipulation.
+        """
         if not isinstance(file_manipulation, FilesManipulation):
             raise TypeError("Apenas objetos do tipo FilesManipulation")
         self.__file_manipulation:FilesManipulation = file_manipulation
@@ -129,46 +155,89 @@ class ConstruCode:
         self.__start_nav(self.base_link)
         
         self.__logs:Logs = Logs(name="ConstruCode")
-                
+        self.__config = Config()
+    
+    @staticmethod   
+    def navegar(f):
+        def wrap(self, *args, **kwargs):
+            
+            if self.__verific_login_window():
+                self.__login()
+            result = f(self, *args, **kwargs)
+
+            
+            return result
+        return wrap
+    
+    @navegar
     def __start_nav(self, link:str, *, timeout:int=5):
+        """
+        Inicia a navegação para o link fornecido e tenta carregar a página.
+
+        Este método tenta abrir a página especificada pelo link e verifica se a página foi carregada com sucesso.
+        Se a página não for carregada dentro do tempo limite especificado, uma exceção `PageNotFound` será levantada.
+
+        Args:
+            link (str): O URL da página que deve ser carregada.
+            timeout (int, opcional): O tempo máximo (em segundos) para tentar carregar a página. O padrão é 5 segundos.
+
+        Raises:
+            PageNotFound: Se a página não puder ser carregada dentro do tempo limite especificado.
+        """    
         print(P(f"Abrindo a pagina '{link}'"))
         for _ in range(timeout):
             try:
+                # Cria uma nova instância do navegador Nav
                 self.__nav:Nav = Nav()
+                # Tenta acessar o link fornecido
                 self.nav.get(link)
                 print(P("Pagina Carregada!"))
                 return
             except:
+                # Se ocorrer um erro, tenta novamente após fechar o navegador e esperar 1 segundo
                 print(P("Erro ao carregar a Pagina, Tentando novamente"))
                 self.nav.close()
                 sleep(1)
+        # Se a página não for carregada dentro do tempo limite, levanta uma exceção
         raise PageNotFound("não foi possivel carregar a pagina")
-        
+    
     def __verific_login_window(self) -> bool:
+        """
+        Verifica se a janela de login está aberta.
+
+        Este método tenta encontrar os elementos de entrada de email e senha na página atual.
+        Se os elementos forem encontrados, assume-se que a janela de login está aberta.
+
+        Returns:
+            bool: Retorna True se a janela de login estiver aberta, caso contrário, False.
+        """        
         try:
+            # Tenta encontrar o campo de senha
             self.nav.find_element('id', 'password', tries=1)
+            # Tenta encontrar o campo de email
             self.nav.find_element('id', 'email', tries=1)
             print(P("Abriu uma tela de Login"))
             return True
         except:
             return False
-        
+
+
     def __login(self, no_exception:bool=False) -> bool:
-        if self.__verific_login_window():
-            self.nav.find_element('id', 'email', tries=1).send_keys(self.email)
-            self.nav.find_element('id', 'password', tries=1).send_keys(self.password)
-            self.nav.find_element('id', 'password', tries=1).send_keys(Keys.RETURN)
+        #if self.__verific_login_window():
+        self.nav.find_element('id', 'email', tries=1).send_keys(self.email)
+        self.nav.find_element('id', 'password', tries=1).send_keys(self.password)
+        self.nav.find_element('id', 'password', tries=1).send_keys(Keys.RETURN)
             
-            if "senha inserida está incorreta." in self.nav.find_element('id', 'login-form', tries=1, wait=2, force=True).text:
-                raise LoginError("senha inserida está incorreta.")
-            print(P("Login Efetuado"))
-            return True
-        else:
-            if not no_exception:
-                raise LoginError("não foi possivel fazer login")
-            return False
+        if "senha inserida está incorreta." in self.nav.find_element('id', 'login-form', tries=1, wait=2, force=True).text:
+            raise LoginError("senha inserida está incorreta.")
+        print(P("Login Efetuado"))
+        return True
+        # else:
+        #     if not no_exception:
+        #         raise LoginError("não foi possivel fazer login")
+        #     return False
         
-        
+    @navegar      
     def __listar_arquivos(self, *, emprendimento:str, link:str, base_link:str="https://construcode.com.br/") -> List[dict]:
         print(P(f"Iniciando Listagem de projetos do empreendimento {emprendimento}"))
         self.nav.get(link)
@@ -189,6 +258,12 @@ class ConstruCode:
             pasta_empreendimento = self.file_manipulation.find_empreendimento(centro_custo)
         else:
             raise Exception(f"Centro de Custo não encontrado {centro_custo}")
+        
+        executou_primeira_vez:list
+        try:
+            executou_primeira_vez = self.__config.param['executou_primeira_vez']
+        except KeyError:
+            executou_primeira_vez = []
         
         projetos:List[dict] = []
         cont = 0
@@ -217,26 +292,30 @@ class ConstruCode:
                 sleep(1)
                 paginate.click()
             sleep(1)
-            if parar:
-                break
+            if centro_custo in executou_primeira_vez:
+                print(P(f"{centro_custo} já executou uma primeira vez"))
+                if parar:
+                    break
+        
+        executou_primeira_vez.append(centro_custo)
+        self.__config.add(executou_primeira_vez=list(set(executou_primeira_vez)))
 
         return projetos
-        
+    
+   
     def __download_dos_projetos(self, *, dados:dict, files_manipulation:EmpreendimentoFolder):
-        for _ in range(60):
+        self.nav.get(dados['url'])
+        if self.__verific_login_window():
+            self.__login()
             self.nav.get(dados['url'])
-            if self.__verific_login_window():
-                self.__login()
-            else:
-                break
-            sleep(1)
+            
         
         #TEMPORARIO APAGAR DEPOIS   
         target = ""
         #########################
         
-                
         nome = self.nav.find_element('id', 'ViewDataTitle').text
+
         print(P(f"Carregando Pagina do Projeto '{nome}'"))
         
         try:
@@ -269,43 +348,117 @@ class ConstruCode:
             print(P(f"Download do Projeto '{nome}' Concluido!"))
         except:
             print(P(f"O projeto '{nome}' tem apenas tipo de arquivo para download"))
-            verificar_arquivos_download(self.nav.download_path, wait=1)
+            verificar_arquivos_download(self.nav.download_path, wait=3)
             files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target) 
-            
-          
-        
-    def ultimo_download(self) -> str:
-        for _ in range(60):
-            lista_arquivos:list = [os.path.join(self.nav.download_path, file) for file in os.listdir(self.nav.download_path)]
-            arquivo = max(lista_arquivos, key=os.path.getctime)
-            if '.crdownload' in arquivo:
-                sleep(1)
-                continue
-            else:
-                break
-        return arquivo
-        
-
-    def start(self, centro_custo_empreendimento:list=[]):
-        
-        print(P("Iniciando Automação no Site"))
-        self.__login()
+    
+    @navegar
+    def __listar_empreendimentos(self, centro_custo_empreendimento:list=[]) -> dict:
         self.nav.find_element('xpath', '//*[@id="radix-:r0:"]/div/div/span/p', force=True, tries=2).click()
-
-
         print(P("Listando Empreendimentos Disponiveis"))
         empreendimentos:dict = {}
         for links in self.nav.find_elements('tag name', 'a'):
             if not (emp:=re.search(r'[A-z](?<!\d)\d{3}(?!\d)[^\n]+', links.text, re.IGNORECASE)) is None:
                 if centro_custo_empreendimento:
                     for centro_custo in centro_custo_empreendimento:
-                        centro_custo_encontrado = re.search(r'[0-9A-z]{4}', emp.group(), re.IGNORECASE)
+                        centro_custo_encontrado = re.search(r'[A-z]{1}[0-9]{3}', emp.group(), re.IGNORECASE)
                         if not centro_custo_encontrado is None:
                             if centro_custo_encontrado.group() == centro_custo:
                                 empreendimentos[emp.group()] = links.get_attribute('href')
                 else:
                     empreendimentos[emp.group()] = links.get_attribute('href')
         print(P(f"Empreendimentos encontrados {[key for key,value in empreendimentos.items()]}"))
+        
+        return empreendimentos
+    
+    @navegar  
+    def __obter_disciplinas(self, *,url:str):
+        get_id:re.Match|None = re.search(r'(?<=id%3D)[0-9]+', url)
+        if get_id is None:
+            print(P(f"id não identificado da url {url}"))
+            raise Exception(f"id não identificado da url {url}")
+        else:
+            emp_id:str = get_id.group()
+        
+        self.nav.get(f"https://www.construcode.com.br/PadraoNomenclatura/Index?id={emp_id}")
+        
+        self.nav.find_element('xpath', '/html/body/div[1]/main/div/div[1]/div/div/div[2]/div/div/table/tbody/tr/td[4]/a[1]/i').click()
+
+        self.nav.find_element('xpath', '/html/body/div[1]/main/div/div/div/div/div[2]/div[2]/button').click()
+        
+        while True:
+            try:
+                self.nav.find_element('xpath', '/html/body/div[4]/div/div[3]/button[1]')
+                sleep(.25)
+                continue
+            except:
+                sleep(1)
+                break
+            
+        self.nav.find_element('xpath', '//*[@id="badge_separadores"]/span[5]').click()
+        
+        
+        
+        def obter_elemento_sigla(element:List[WebElement]) -> WebElement:
+            for div in element:
+                try:
+                    for label in div.find_elements(By.TAG_NAME, 'label'):
+                        if label.text == 'Definir preenchimento':
+                            return div
+                except:
+                    continue
+            raise Exception("Elemento do preenchimento das Siglas não foi encontrado")
+        
+        #import pdb; pdb.set_trace()
+        
+        div_lista_siglas:WebElement = obter_elemento_sigla(self.nav.find_elements('class name', 'preenchimentoSigla'))
+        
+        
+        
+        
+        disciplina:dict = {}
+
+        for div in div_lista_siglas.find_elements(By.TAG_NAME, 'div'):
+            if (id_disciplina:=div.get_attribute('id')) != '':
+                for input in div.find_elements(By.TAG_NAME, 'input'):
+                    if input.get_attribute('name') == f"Referencias[{id_disciplina}].Origem":
+                        sigla:str|None = input.get_attribute('value')
+                        break
+                for span in div.find_elements(By.TAG_NAME, 'span'):
+                    if span.get_attribute('role') == 'textbox':
+                        nomeclatura:str|None = span.get_attribute('title')
+                disciplina[sigla] = nomeclatura
+                del sigla; del nomeclatura                    
+        
+        
+        
+        return disciplina
+    
+    @navegar    
+    def ultimo_download(self) -> str:
+        for _ in range(60):
+            sleep(1)
+            lista_arquivos:list = [os.path.join(self.nav.download_path, file) for file in os.listdir(self.nav.download_path)]
+            arquivo:str = max(lista_arquivos, key=os.path.getctime)
+            sleep(1)
+            if '.crdownload' in arquivo:
+                #print(arquivo)
+                del lista_arquivos
+                del arquivo
+                continue
+            else:
+                return arquivo
+        raise Exception("não foi possivel identificar ultimo download")
+        
+    @navegar 
+    def extrair_projetos(self, centro_custo_empreendimento:list=[]):
+        print(P("Iniciando Automação no Site"))
+        
+        if not os.path.exists(self.disciplinas_file_path):
+            self.verificar_disciplinas()
+        
+        self.nav.get(self.base_link)
+        empreendimentos:dict = self.__listar_empreendimentos(centro_custo_empreendimento)
+        
         
         if not empreendimentos:
             raise Exception(f"Empreendimentos não encontrados '{centro_custo_empreendimento}'")
@@ -317,6 +470,7 @@ class ConstruCode:
         
         if not empreendimentos:
             raise Exception("sem arquivos para download")
+        
 
         print(P("Iniciando Download dos Projetos"))       
         for key, value in empreendimentos.items():
@@ -337,7 +491,34 @@ class ConstruCode:
         print(P("Download Finalizado"))         
                 
         print(P("Fim da Automatação WEB!"))    
+    
+    @navegar    
+    def verificar_disciplinas(self, empreendimentos_urls:dict={}):
+        self.nav.get(self.base_link)
+        # if self.__verific_login_window():
+        #     self.__login()
         
+        if not empreendimentos_urls:
+            empreendimentos_urls = self.__listar_empreendimentos()
+        
+        if not empreendimentos_urls:
+            raise Exception(f"Empreendimentos não encontrados '{empreendimentos_urls}'")
+        
+        nomeclatura_disciplinas:dict = {}
+        for key, value in empreendimentos_urls.items():
+            try:
+                nomeclatura_disciplinas[key] = self.__obter_disciplinas(url=value)
+            except Exception as error:
+                self.__logs.register(status='Error', description=str(error), exception=traceback.format_exc())
+                print(P(error))
+                continue
+            
+        file_name:str = self.disciplinas_file_path
+        if not os.path.exists(os.path.dirname(file_name)):
+            os.makedirs(os.path.dirname(file_name))
+        
+        pd.DataFrame(nomeclatura_disciplinas).to_json(file_name)
+        print(P(f"Siglas das Nomeclaturas salvas no caminho {file_name}"))
 
         
         

@@ -4,6 +4,8 @@ import re
 from datetime import datetime
 import os
 from time import sleep
+import json
+from typing import Dict
 
 def fechar_excel(path:str):
     try:
@@ -39,13 +41,83 @@ def verificar_arquivos_download(path:str, *,timeout:int=60 * 15, wait:int=0) -> 
                 if '.crdownload' in file:
                     exist = True
             if not exist:
-                sleep(2)
+                sleep(3)
                 return True
             sleep(1)
         return False
     return False
+
+def tratar_nome_arquivo(nome:str) -> str:
+    return re.sub(r'[|\\/:*?"<>]', "-", nome)
+
+class Config:
+    @property
+    def file_path(self) -> str:
+        return self.__file_path
+    
+    @property
+    def param(self) -> dict:
+        return self.__param
+    
+    
+    def __init__(self, *, file_path:str=os.path.join(os.getcwd(), 'Entities\\config.json')) -> None:
+        if not file_path.endswith('.json'):
+            file_path += '.json'
+        
+        for _ in range(2):
+            try:
+                if not os.path.exists(os.path.dirname(file_path)):
+                    os.makedirs(os.path.dirname(file_path))
+                    break
+            except FileNotFoundError:
+                file_path = os.path.join(os.getcwd(), file_path)
+                sleep(1)
+        
+        if not os.path.exists(file_path):
+            with open(file_path, 'w', encoding='utf-8') as _file:
+                json.dump({}, _file)
+        
+        self.__file_path:str = file_path
+        
+        with open(self.file_path, 'r', encoding='utf-8') as _file:
+            self.__param:dict = json.load(_file)
+            
+    def add(self, **kwargs):
+        for key, value in kwargs.items():
+            self.__param[key] = value
+        self.__save()
+        self.__load()        
+        return self
+    
+    def reload(self):
+        self.__load()
+        return self
+    
+    def delete(self, *args:str):
+        for key in args:
+            try:
+                del self.param[key]
+            except:
+                continue
+        self.__save()
+        self.__load()
+        
+        return self
+    
+    def __save(self) -> None:
+        with open(self.file_path, 'w', encoding='utf-8')as _file:
+            json.dump(self.param, _file)
+            
+    def __load(self) -> None:
+        with open(self.file_path, 'r', encoding='utf-8')as _file:
+            self.__param = json.load(_file)
+        
+            
+        
+
     
 if __name__ == "__main__":
-    agora = datetime.now()
-    verificar_arquivos_download(r'R:\Alterar Nomeclatura Projetos - Projetos Executivos\Download_Projects', wait=3)
-    print(f"{datetime.now() - agora}")
+    bot = Config()
+    
+    print(bot.param['falhou'])
+    

@@ -21,14 +21,17 @@ class Logs:
         if not os.path.exists(self.path_folder):
             os.makedirs(self.path_folder)
             
-    def register(self, *, status:Literal['Error', 'Concluido'],  description:str,exception:str=traceback.format_exc(), file:str="Logs_Operation.csv", date_format:str='%d/%m/%Y %H:%M:%S'):
+    def register(self, *, status:Literal['Error', 'Concluido'],  description:str,exception:str|None=traceback.format_exc(), file:str="Logs_Operation.csv", date_format:str='%d/%m/%Y %H:%M:%S'):
         if not file.endswith('.csv'):
             file += '.csv'
         
         file_path:str = os.path.join(self.path_folder, file)
         
-        exception = str(exception)
-        exception = re.sub(r'\n', ' <br> ', exception)
+        if not exception is None:
+            exception = str(exception)
+            exception = re.sub(r'\n', ' <br> ', exception)
+        else:
+            exception = ""
         
         description = re.sub(r'\n', ' <br> ', description)
         
