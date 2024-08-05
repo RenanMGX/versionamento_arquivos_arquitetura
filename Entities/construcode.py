@@ -7,6 +7,7 @@ from selenium.webdriver.remote.webelement import WebElement # for typing
 from selenium.webdriver.chrome.webdriver import WebDriver # for typing
 from Entities.files_manipulation import FilesManipulation, EmpreendimentoFolder
 from Entities.functions import Config
+from .credenciais import Credential
 from typing import List, Literal, Dict
 from time import sleep
 import shutil
@@ -18,6 +19,8 @@ from .logs import Logs
 import traceback
 import pandas as pd
 import json
+
+crd:dict = Credential('ConstruCode').load()
 
 DISCIPLINAS_FILE_PATH:str = os.path.join(os.getcwd(), f"Entities\\dictionary\\disciplinas.json")
 
@@ -129,7 +132,7 @@ class ConstruCode:
         return DISCIPLINAS_FILE_PATH
     
     
-    def __init__(self, *, email:str, password:str, file_manipulation:FilesManipulation, link:str="https://next.construcode.com.br/", date:datetime=datetime.now()) -> None:
+    def __init__(self, *, file_manipulation:FilesManipulation, email:str=crd['email'], password:str=crd['password'], link:str="https://next.construcode.com.br/", date:datetime=datetime.now()) -> None:
         """
         Inicializa uma nova instância da classe ConstruCode.
 
@@ -309,7 +312,6 @@ class ConstruCode:
             self.__login()
             self.nav.get(dados['url'])
             
-        
         #TEMPORARIO APAGAR DEPOIS   
         target = ""
         #########################
@@ -328,6 +330,10 @@ class ConstruCode:
                     sleep(1)          
                 
             self.nav.find_element('xpath', '/html/body/div[13]/div/div[3]/button[2]').click()
+            while True:
+                if len(self.nav.window_handles) <= 1:
+                    break
+                sleep(1)
             verificar_arquivos_download(self.nav.download_path, wait=1)
             files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self) 
             
@@ -341,15 +347,29 @@ class ConstruCode:
                 
             self.nav.find_element('xpath', '/html/body/div[13]/div/div[2]/div[3]/label[2]/input').click()
             self.nav.find_element('xpath', '/html/body/div[13]/div/div[3]/button[2]').click()
-            verificar_arquivos_download(self.nav.download_path, wait=1)
+            while True:
+                if len(self.nav.window_handles) <= 1:
+                    break
+                sleep(1)
+            verificar_arquivos_download(self.nav.download_path, wait=1)    
             files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self) 
 
             sleep(1)
             print(P(f"Download do Projeto '{nome}' Concluido!"))
         except:
             print(P(f"O projeto '{nome}' tem apenas tipo de arquivo para download"))
-            verificar_arquivos_download(self.nav.download_path, wait=3)
-            files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self) 
+            
+            while True:
+                if len(self.nav.window_handles) <= 1:
+                    break
+                sleep(1)
+            verificar_arquivos_download(self.nav.download_path, wait=1)
+            files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self)
+            
+        while True:
+            if len(self.nav.window_handles) <= 1:
+                break
+            sleep(1)
     
     @navegar
     def __listar_empreendimentos(self, centro_custo_empreendimento:list=[]) -> dict:
@@ -367,6 +387,8 @@ class ConstruCode:
                 else:
                     empreendimentos[emp.group()] = links.get_attribute('href')
         print(P(f"Empreendimentos encontrados {[key for key,value in empreendimentos.items()]}"))
+        
+        self.__config.add(empreendimentos=list(set(empreendimentos)))
         
         return empreendimentos
     
@@ -534,8 +556,6 @@ class ConstruCode:
             for key, value in disciplinas_salvas.items():
                 if not key in nomeclatura_disciplinas:
                     nomeclatura_disciplinas[key] = value
-            
-        
         
         pd.DataFrame(nomeclatura_disciplinas).to_json(self.disciplinas_file_path)
         print(P(f"Siglas das Nomeclaturas salvas no caminho {self.disciplinas_file_path}"))

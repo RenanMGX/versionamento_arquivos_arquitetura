@@ -3,8 +3,9 @@ import re
 from .dictionary.dictionary import CODIGO_DISCIPLINA, ETAPA_PROJETOS, SUB_PASTAS
 from typing import List, Dict
 import shutil
-from .functions import tratar_nome_arquivo, P
+from .functions import tratar_nome_arquivo, P, remover_acentos, Config
 from Entities.logs import Logs
+from datetime import datetime
 
 
 class EmpreendimentoFolder:
@@ -153,8 +154,101 @@ class EmpreendimentoFolder:
             etapa = os.path.join(target, f"** Não Identificado **\\--{codigo}--".upper())
         
         return etapa
-        
     
+    def __identificar_arquivos_antigos(self, path:str, *, pattern:str=r'[A-z]{1}[0-9]{3}-[\d\D]+(?=R[\d\D]+)', onlyFiles: bool=False) -> list:
+        """
+        Identifica arquivos antigos em um diretório com base no nome da revisão contida no nome do arquigo exp 'R01'.
+
+        Args:
+            path (str): O caminho do diretório onde os arquivos serão verificados.
+            pattern (int): formula pattern para bib 're' para identificar qual versão do arquivo pelo nome exp 'R01'.
+
+        Returns:
+            list: Lista de caminhos dos arquivos antigos.
+        """
+        if not os.path.exists(path):
+            raise Exception(f"caminho não encontrado '{path}'")    
+
+        files:Dict[str, list] = {}
+        for values in os.listdir(path):
+            file = re.search(pattern, values)
+            if file:
+                try:
+                    files[file.group()].append(file.string)
+                except KeyError:
+                    files[file.group()] = [file.string]
+                    
+        arquivos_ultrapassados:list = []
+        for key, arquivos in files.items():
+            revisoes:Dict[str, list] = {}
+            for file in arquivos:
+                
+                num_revisao = re.search(r'R[0-9]+', file)
+                if num_revisao:
+                    #file = re.search(pattern, file).group() #type: ignore
+                    try:
+                        revisoes[num_revisao.group()].append(file)
+                    except KeyError:
+                        revisoes[num_revisao.group()] = [file]
+            try:
+                ultima_revisao_temp:tuple = revisoes.popitem()
+            except KeyError:
+                return []
+            ultima_revisao:list = ultima_revisao_temp[1]
+
+            for revisao, values in revisoes.items():
+                for file in values:
+                    #if file in ultima_revisao:
+                    if re.search(pattern, file).group() in [re.search(pattern, file).group() for file in ultima_revisao]:#type: ignore
+                        arquivos_ultrapassados.append(file)
+        
+        if onlyFiles:                
+            return arquivos_ultrapassados 
+        
+        return [os.path.join(path, file) for file in arquivos_ultrapassados]        
+    
+    def __mover_substituidos(self, path_file:str, *, sub_path:str="SUBSTITUÍDOS") -> None:
+        if not os.path.exists(path_file):
+            raise Exception(f"o arquivo '{path_file}' não foi encontrado")
+        sub_path = os.path.join(os.path.dirname(path_file), sub_path)
+        if not os.path.exists(sub_path):
+            os.makedirs(sub_path)
+        
+        try:
+            shutil.move(path_file, sub_path)
+        except shutil.Error:
+            new_file = os.path.join(sub_path, datetime.now().strftime(f'Copia-%d%m%Y%H%M%S__{os.path.basename(path_file)}'))
+            shutil.move(path_file, new_file)  
+            
+    def __organizar_subistituidos(self, path_base:str, *, sub_path:str="SUBSTITUÍDOS") -> None:
+        sub_path = os.path.join(path_base, sub_path)
+
+        if os.path.exists(sub_path):
+            revisao:Dict[str, list] = {}
+            for file in os.listdir(sub_path):
+                if os.path.isfile(os.path.join(sub_path, file)):
+                    rev = re.search(r'R[0-9]+', file)
+                    if rev:
+                        try:
+                            revisao[rev.group()].append(os.path.join(sub_path, file))
+                        except KeyError:
+                            revisao[rev.group()] = [os.path.join(sub_path, file)]
+            
+
+            for key, values in revisao.items():
+
+                rev_path:str = os.path.join(sub_path, key)
+                if not os.path.exists(rev_path):
+                    os.makedirs(rev_path)
+                
+                for file in values:
+                    try:
+                        shutil.move(file, rev_path)
+                    except shutil.Error:
+                        new_file = os.path.join(rev_path, datetime.now().strftime(f'Copia-%d%m%Y%H%M%S__{os.path.basename(file)}'))
+                        shutil.move(file, new_file)    
+                        
+                         
     def file_exist(self, _file:str) -> bool:
         """verifica se o arquivo existe na pasta
 
@@ -196,7 +290,19 @@ class EmpreendimentoFolder:
         #print(P(f"arquivo salvo no caminho {caminho_para_salvar}"))
         self.logs.register(status='Concluido', description=f"Arquivo salvo no caminho {caminho_para_salvar}",exception=None)
         
-    
+    def versionar_arquivos(self):
+        
+        print(P(f"Preparando para versionar os aquivos do empreendimento '{self.centro}'"))
+        for path, folders, files in os.walk(self.emp_folder):
+            #print(path)
+            if (os.path.basename(path) in ETAPA_PROJETOS.values()) or ((valid_path:=re.search(r'[A-z]{1}[0-9]{3}+-[\d\D]+', os.path.basename(path)))):
+                if (arquivos:=self.__identificar_arquivos_antigos(path)):
+                    for arquivo in arquivos:
+                        self.__mover_substituidos(arquivo)
+                self.__organizar_subistituidos(path)
+        
+        
+############################################   
 
 class FilesManipulation:
     @property
@@ -210,11 +316,12 @@ class FilesManipulation:
     
     def __init__(self, base_path:str) -> None:
         self.__base_path:str = base_path
+        self.__config:Config = Config()
    
     def __str__(self) -> str:
         return self.base_path
     
-    def find_empreendimento(self, centro_custo:str, primeiro:bool=True) -> EmpreendimentoFolder:
+    def find_empreendimento(self, centro_custo:str) -> EmpreendimentoFolder:
         for _ in range(2):
             for folders in os.listdir(self.base_path):
                 folders = os.path.join(self.base_path, folders)
@@ -241,6 +348,25 @@ class FilesManipulation:
 
         raise FileNotFoundError(f"Pasta do Empreendimento não encontrado -> {self.base_path}")
     
+    
+    def find_empreendimentos(self) -> List[EmpreendimentoFolder]:
+        try:
+            empreendimentos_obj:List[EmpreendimentoFolder] = []
+            empreendimentos:list = [] 
+            for emp in self.__config.param.get('empreendimentos'):#type: ignore
+                if (emp:=re.search(r'[A-z]{1}[0-9]{3}', emp, re.IGNORECASE)):
+                    empreendimentos.append(emp.group())
+            
+            for empr in empreendimentos:
+                try:
+                    empreendimentos_obj.append(self.find_empreendimento(empr))
+                except FileNotFoundError:
+                    continue
+                
+            return empreendimentos_obj
+            
+        except:
+            return []
         
 
 if __name__ == "__main__":

@@ -6,6 +6,7 @@ import os
 from time import sleep
 import json
 from typing import Dict
+import unicodedata
 
 def fechar_excel(path:str):
     try:
@@ -83,10 +84,12 @@ class Config:
             self.__param:dict = json.load(_file)
             
     def add(self, **kwargs):
+        self.__load()
         for key, value in kwargs.items():
             self.__param[key] = value
         self.__save()
-        self.__load()        
+        self.__load()
+        print(P(f"no arquivo de config '{kwargs}' foi adicionado"))   
         return self
     
     def reload(self):
@@ -94,6 +97,7 @@ class Config:
         return self
     
     def delete(self, *args:str):
+        self.__load()
         for key in args:
             try:
                 del self.param[key]
@@ -101,7 +105,7 @@ class Config:
                 continue
         self.__save()
         self.__load()
-        
+        print(P(f"no arquivo de config '{args}' foi deletado"))        
         return self
     
     def __save(self) -> None:
@@ -113,8 +117,8 @@ class Config:
             self.__param = json.load(_file)
         
             
-        
-
+def remover_acentos(texto):
+    return unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
     
 if __name__ == "__main__":
     bot = Config()
