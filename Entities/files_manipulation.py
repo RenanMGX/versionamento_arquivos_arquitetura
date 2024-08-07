@@ -135,11 +135,11 @@ class EmpreendimentoFolder:
         try:
             disciplina = SELECTED_CODIGO_DISCIPLINA[codigo]
             try:
-                disciplina = os.path.join(target, f"{SUB_PASTAS[codigo]}\\XXXX-{disciplina}".upper())
+                disciplina = os.path.join(target, f"{SUB_PASTAS[codigo]}\\XXXX-{tratar_nome_arquivo(disciplina)}".upper())
             except:
-                disciplina = os.path.join(target, f"XXXX-{disciplina}".upper())
+                disciplina = os.path.join(target, f"XXXX-{tratar_nome_arquivo(disciplina)}".upper())
         except:
-            disciplina = os.path.join(target, f"** Não Identificado **\\{self.centro}-{codigo}".upper())
+            disciplina = os.path.join(target, f"** Não Identificado **\\XXXX-{codigo}".upper())
             
         return disciplina.replace("XXXX", self.centro)
     
@@ -149,7 +149,7 @@ class EmpreendimentoFolder:
         etapa:str
         try:
             etapa = ETAPA_PROJETOS[codigo]
-            etapa = os.path.join(target, etapa.upper())
+            etapa = os.path.join(target, tratar_nome_arquivo(etapa.upper()))
         except:
             etapa = os.path.join(target, f"** Não Identificado **\\--{codigo}--".upper())
         

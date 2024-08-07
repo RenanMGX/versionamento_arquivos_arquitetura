@@ -5,8 +5,9 @@ from datetime import datetime
 import os
 from time import sleep
 import json
-from typing import Dict
+from typing import Dict, Literal
 import unicodedata
+from colorama import Fore
 
 def fechar_excel(path:str):
     try:
@@ -26,15 +27,37 @@ class P:
     @property
     def date(self) -> str:
         return datetime.now().strftime("[%d/%m/%Y - %H:%M:%S] ")
-    def __init__(self, value: object) -> None:
-        self.__value:object = value
+    
+    @property
+    def color(self) -> str:
+        if self.__color == 'white':
+            return Fore.WHITE
+        elif self.__color == 'blue':
+            return Fore.BLUE
+        elif self.__color == 'green':
+            return Fore.GREEN
+        elif self.__color == 'red':
+            return Fore.RED
+        elif self.__color =='cyan':
+            return Fore.CYAN
+        elif self.__color == 'yellow':
+            return Fore.YELLOW
+        elif self.__color == 'magenta':
+            return Fore.MAGENTA
+        else:
+            return Fore.RESET
+    
+    def __init__(self, value: str, *, color:Literal['white', 'red', 'blue', 'green', 'cyan', 'yellow', 'magenta', 'nenhum'] = "nenhum") -> None:
+        self.__value:str = value
+        self.__color:str = color
         
     def __str__(self) -> str:
-        return f"{self.date}{self.__value}"
+        return f"{self.date}{self.color + self.__value + Fore.RESET}"
     
 def verificar_arquivos_download(path:str, *,timeout:int=60 * 15, wait:int=0) -> bool:
     if wait > 0:
         sleep(wait)
+
     if os.path.exists(path):
         for _ in range(timeout):
             exist:bool = False

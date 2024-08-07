@@ -14,6 +14,7 @@ import shutil
 import re
 import os
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 from .functions import P, verificar_arquivos_download, tratar_nome_arquivo
 from .logs import Logs
 import traceback
@@ -296,16 +297,33 @@ class ConstruCode:
                 paginate.click()
             sleep(1)
             if centro_custo in executou_primeira_vez:
-                print(P(f"{centro_custo} já executou uma primeira vez"))
+                #print(P(f"{centro_custo} já executou uma primeira vez"))
                 if parar:
-                    break
+                    continue
+                    #break
         
         executou_primeira_vez.append(centro_custo)
         self.__config.add(executou_primeira_vez=list(set(executou_primeira_vez)))
 
         return projetos
     
-   
+    def __verificar_2_abas(self, *, timeout:int=10*60, espera:int=3, num_abas:int=1) -> bool:
+        agora = datetime.now()
+        tempo_espera = agora
+        for _ in range(timeout):
+            logic = agora >= (tempo_espera + relativedelta(seconds=espera))
+            if len(self.nav.window_handles) <= num_abas:
+                if logic:
+                    return True
+            else:
+                tempo_espera = datetime.now()
+            agora = datetime.now()
+            
+            sleep(1)
+        
+        raise Exception("não foi possivel esperar ficar com apenas 1 aba aberta")
+            
+    sleep(1)   
     def __download_dos_projetos(self, *, dados:dict, files_manipulation:EmpreendimentoFolder):
         self.nav.get(dados['url'])
         if self.__verific_login_window():
@@ -318,7 +336,7 @@ class ConstruCode:
         
         nome = self.nav.find_element('id', 'ViewDataTitle').text
 
-        print(P(f"Carregando Pagina do Projeto '{nome}'"))
+        print(P(f"Carregando Pagina do Projeto '{nome}'", color='blue'))
         
         try:
             #download PDF
@@ -330,10 +348,7 @@ class ConstruCode:
                     sleep(1)          
                 
             self.nav.find_element('xpath', '/html/body/div[13]/div/div[3]/button[2]').click()
-            while True:
-                if len(self.nav.window_handles) <= 1:
-                    break
-                sleep(1)
+            self.__verificar_2_abas()
             verificar_arquivos_download(self.nav.download_path, wait=1)
             files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self) 
             
@@ -347,29 +362,21 @@ class ConstruCode:
                 
             self.nav.find_element('xpath', '/html/body/div[13]/div/div[2]/div[3]/label[2]/input').click()
             self.nav.find_element('xpath', '/html/body/div[13]/div/div[3]/button[2]').click()
-            while True:
-                if len(self.nav.window_handles) <= 1:
-                    break
-                sleep(1)
+            self.__verificar_2_abas()
             verificar_arquivos_download(self.nav.download_path, wait=1)    
             files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self) 
 
             sleep(1)
-            print(P(f"Download do Projeto '{nome}' Concluido!"))
+            print(P(f"Download do Projeto '{nome}' Concluido!", color='green'))
         except:
-            print(P(f"O projeto '{nome}' tem apenas tipo de arquivo para download"))
+            print(P(f"O projeto '{nome}' tem apenas tipo de arquivo para download", color='cyan'))
             
-            while True:
-                if len(self.nav.window_handles) <= 1:
-                    break
-                sleep(1)
+            self.__verificar_2_abas()
             verificar_arquivos_download(self.nav.download_path, wait=1)
             files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self)
+            print(P(f"Download do Projeto '{nome}' Concluido!", color='green'))
             
-        while True:
-            if len(self.nav.window_handles) <= 1:
-                break
-            sleep(1)
+        self.__verificar_2_abas()
     
     @navegar
     def __listar_empreendimentos(self, centro_custo_empreendimento:list=[]) -> dict:
@@ -396,7 +403,7 @@ class ConstruCode:
     def __obter_disciplinas(self, *,url:str):
         get_id:re.Match|None = re.search(r'(?<=id%3D)[0-9]+', url)
         if get_id is None:
-            print(P(f"id não identificado da url {url}"))
+            print(P(f"id não identificado da url {url}", color='red'))
             raise Exception(f"id não identificado da url {url}")
         else:
             emp_id:str = get_id.group()
@@ -506,25 +513,25 @@ class ConstruCode:
             raise Exception("sem arquivos para download")
         
 
-        print(P("Iniciando Download dos Projetos"))       
+        print(P("Iniciando Download dos Projetos", color='white'))       
         for key, value in empreendimentos.items():
             try:
                 centro = re.search(r'[A-z]{1}[0-9]{3}', key).group() # type: ignore
                 files_manipulation = self.file_manipulation.find_empreendimento(centro)
             except Exception as error:
                     self.__logs.register(status='Error', description=str(error), exception=traceback.format_exc())
-                    print(P(error))
+                    print(P(str(error), color='red'))
                     continue
             for dados in value:
                 try:
                     self.__download_dos_projetos(dados=dados, files_manipulation=files_manipulation)
                 except Exception as error:
                     self.__logs.register(status='Error', description=f"Não foi possivel fazer o download do projeto '{dados['url']}'", exception=traceback.format_exc())
-                    print(P(f"Não foi possivel fazer o download do projeto '{dados['url']}'"))
+                    print(P(f"Não foi possivel fazer o download do projeto '{dados['url']}'", color='red'))
                 sleep(2)
-        print(P("Download Finalizado"))         
+        print(P("Download Finalizado", color='yellow'))         
                 
-        print(P("Fim da Automatação WEB!"))    
+        print(P("Fim da Automatação WEB!",color='white'))    
     
     @navegar    
     def verificar_disciplinas(self, empreendimentos:list=[]):
@@ -544,7 +551,7 @@ class ConstruCode:
                 nomeclatura_disciplinas[key] = self.__obter_disciplinas(url=value)
             except Exception as error:
                 self.__logs.register(status='Error', description=str(error), exception=traceback.format_exc())
-                print(P(error))
+                print(P(str(error), color='red'))
                 continue
             
         if not os.path.exists(os.path.dirname(self.disciplinas_file_path)):
