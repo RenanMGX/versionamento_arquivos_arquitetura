@@ -84,7 +84,8 @@ class Config:
         return self.__param
     
     
-    def __init__(self, *, file_path:str=os.path.join(os.getcwd(), 'Entities\\config.json')) -> None:
+    def __init__(self, *, file_path:str=os.path.join(os.getcwd(), 'Entities\\config.json'), speak:bool=False) -> None:
+        self.__speak:bool = speak
         if not file_path.endswith('.json'):
             file_path += '.json'
         
@@ -112,7 +113,7 @@ class Config:
             self.__param[key] = value
         self.__save()
         self.__load()
-        print(P(f"no arquivo de config '{kwargs}' foi adicionado"))   
+        print(P(f"no arquivo de config '{kwargs}' foi adicionado")) if self.__speak else None 
         return self
     
     def reload(self):
@@ -128,7 +129,7 @@ class Config:
                 continue
         self.__save()
         self.__load()
-        print(P(f"no arquivo de config '{args}' foi deletado"))        
+        print(P(f"no arquivo de config '{args}' foi deletado"))  if self.__speak else None         
         return self
     
     def __save(self) -> None:

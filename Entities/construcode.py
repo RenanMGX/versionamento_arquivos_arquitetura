@@ -509,9 +509,18 @@ class ConstruCode:
             empreendimentos[key] = self.__listar_arquivos(emprendimento=key, link=value)
         print(P("Listagem de todos os projetos terminada"))
         
-        if not empreendimentos:
-            raise Exception("sem arquivos para download")
+        # if not empreendimentos:
+        #     raise Exception("sem arquivos para download")
         
+        tem_download:bool = False
+        for key,value in empreendimentos.items():
+            if value:
+                tem_download = True
+        if not tem_download:
+            print(P("sem arquivos para download", color='green'))
+            return 
+        
+        #import pdb; pdb.set_trace()
 
         print(P("Iniciando Download dos Projetos", color='white'))       
         for key, value in empreendimentos.items():
@@ -531,7 +540,7 @@ class ConstruCode:
                 sleep(2)
         print(P("Download Finalizado", color='yellow'))         
                 
-        print(P("Fim da Automatação WEB!",color='white'))    
+        #print(P("Fim da Automatação WEB!",color='white'))    
     
     @navegar    
     def verificar_disciplinas(self, empreendimentos:list=[]):
