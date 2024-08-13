@@ -10,10 +10,10 @@ def path_ambiente(param:Literal["prd", "qas"]):
     if param == "qas":
         return f"C:\\Users\\{getuser()}\\Downloads"
     elif param == 'prd':
-        if input("Vc está executando em produção. continuar?[s/n] ").lower() == 's':
-            return r"\\server008\G\ARQ_PATRIMAR\Setores\dpt_tecnico\projetos_arquitetura\_ARQUITETURA"
-        else:
-            sys.exit()
+        #if input("Vc está executando em produção. continuar?[s/n] ").lower() == 's':
+        return r"\\server008\G\ARQ_PATRIMAR\Setores\dpt_tecnico\projetos_arquitetura\_ARQUITETURA"
+        #else:
+        #    sys.exit()
 
 class Execute:
     @property
@@ -33,6 +33,8 @@ class Execute:
         
         self.__constru_code.extrair_projetos()
         
+        self.versionar()
+        
         print(P("Finalizado!"))
         print(P(f"tempo de execução {datetime.now() - time_inicio}", color='white'))
         
@@ -48,7 +50,7 @@ if __name__ == "__main__":
         print(P("é necessario informar os argumentos para iniciar"))
         print(P("[start, verificar_disciplinas, versionar]"))
     else:
-        execute:Execute = Execute('qas')
+        execute:Execute = Execute('prd')
         
         if argv[1].lower() == "start":
             execute.start()        

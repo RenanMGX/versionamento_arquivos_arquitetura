@@ -116,9 +116,9 @@ class Credential:
         return self.criar_cifra(text, -key)
         
 if __name__ == "__main__":
-    credential = Credential('ConstruCode')
+    crd = Credential('ConstruCode')
     
     
-    print(credential.load())
+    print(crd.load())
     
     
