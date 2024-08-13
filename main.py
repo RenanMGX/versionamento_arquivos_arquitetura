@@ -48,7 +48,6 @@ class Execute:
 if __name__ == "__main__":
     log = Logs()
     try:
-        raise Exception("teste")
         argv:List[str] = sys.argv
         
         if len(argv) <= 1:
