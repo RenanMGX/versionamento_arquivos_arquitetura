@@ -1,10 +1,12 @@
 from Entities.construcode import ConstruCode, crd
 from Entities.files_manipulation import FilesManipulation
 from Entities.functions import P
+from Entities.logs import Logs
 from datetime import datetime 
 from getpass import getuser
 from typing import Literal, List
 import sys
+import traceback
 
 def path_ambiente(param:Literal["prd", "qas"]):
     if param == "qas":
@@ -44,19 +46,25 @@ class Execute:
             empreendimento.versionar_arquivos()
         
 if __name__ == "__main__":
-    argv:List[str] = sys.argv
-    
-    if len(argv) <= 1:
-        print(P("é necessario informar os argumentos para iniciar"))
-        print(P("[start, verificar_disciplinas, versionar]"))
-    else:
-        execute:Execute = Execute('prd')
+    log = Logs()
+    try:
+        raise Exception("teste")
+        argv:List[str] = sys.argv
         
-        if argv[1].lower() == "start":
-            execute.start()        
-        elif argv[1].lower() == "verificar_disciplinas":
-            execute.constru_code.verificar_disciplinas()
-            print(P("disciplinas verificadas!"))
-        elif argv[1].lower() == "versionar":
-            execute.versionar()
-            print("arquivos versionados!")
+        if len(argv) <= 1:
+            print(P("é necessario informar os argumentos para iniciar"))
+            print(P("[start, verificar_disciplinas, versionar]"))
+        else:
+            execute:Execute = Execute('prd')
+            
+            if argv[1].lower() == "start":
+                execute.start()        
+            elif argv[1].lower() == "verificar_disciplinas":
+                execute.constru_code.verificar_disciplinas()
+                print(P("disciplinas verificadas!"))
+            elif argv[1].lower() == "versionar":
+                execute.versionar()
+                print("arquivos versionados!")
+    except Exception as error:
+        log.register(status='Error', description="execução no main", exception=traceback.format_exc())
+        
