@@ -25,7 +25,7 @@ class Execute:
         return self.__constru_code
     
     def __init__(self, ambiente:Literal["prd", "qas"]) -> None:
-        self.__files:FilesManipulation = FilesManipulation(path_ambiente(ambiente))
+        self.__files:FilesManipulation = FilesManipulation(path_ambiente(ambiente), folder_teste=True)
         self.__constru_code:ConstruCode = ConstruCode(file_manipulation=self.__files)
         
     def start(self):

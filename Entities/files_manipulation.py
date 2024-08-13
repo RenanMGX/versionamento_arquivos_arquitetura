@@ -41,8 +41,12 @@ class EmpreendimentoFolder:
     def logs(self):
         return self.__logs
     
+    @property
+    def folder_teste(self) -> str:
+        return self.__folder_teste
     
-    def __init__(self, *, emp_folder:str, base_path:str) -> None:
+    
+    def __init__(self, *, emp_folder:str, base_path:str, folder_teste:str="") -> None:
         """Metodo construtor ele ira listar os arquivos dentro da pasta
 
         Args:
@@ -54,6 +58,7 @@ class EmpreendimentoFolder:
         """
         self.__base_path:str = base_path
         self.__emp_folder:str = emp_folder
+        self.__folder_teste:str = folder_teste
         
         if (self.__emp_folder.endswith("\\")) or (self.__emp_folder.endswith("/")):
             self.__emp_folder = self.__emp_folder[0:-1]
@@ -279,7 +284,10 @@ class EmpreendimentoFolder:
     
     def copy_file_to(self, *, original_file:str, target:str="", **kargs):
         if target == "":
-            target = self.base_path
+            if not self.folder_teste:
+                target = self.base_path
+            else:
+                target = self.folder_teste
         
         caminho_para_salvar = self.__identificar_caminho_final(arquivo_original=original_file, target=target, **kargs)
         
@@ -314,9 +322,14 @@ class FilesManipulation:
             raise FileNotFoundError(f"Caminho não encontrado! -> {path}")
         return path
     
-    def __init__(self, base_path:str) -> None:
+    @property
+    def folder_teste(self) -> bool:
+        return self.__folder_teste
+    
+    def __init__(self, base_path:str, *, folder_teste:bool=False) -> None:
         self.__base_path:str = base_path
         self.__config:Config = Config()
+        self.__folder_teste:bool = folder_teste
    
     def __str__(self) -> str:
         return self.base_path
@@ -331,6 +344,12 @@ class FilesManipulation:
                         if not result is None:
                             folder = os.path.join(folders, folder)
                             if os.path.isdir(folder):
+                                if self.folder_teste:
+                                    folder += "---RPA---"
+                                    if not os.path.exists(folder):
+                                        os.makedirs(folder)
+                                print(folder)
+                                    #return EmpreendimentoFolder(emp_folder=folder, base_path=self.base_path, folder_teste=folder_teste)
                                 return EmpreendimentoFolder(emp_folder=folder, base_path=self.base_path)
                 
             new_path = os.path.join(self.base_path, f"## Não Encontrados ##\\{centro_custo}")
