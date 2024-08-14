@@ -48,6 +48,7 @@ class Execute:
 if __name__ == "__main__":
     log = Logs()
     try:
+        tempo_inicio:datetime = datetime.now()
         argv:List[str] = sys.argv
         
         if len(argv) <= 1:
@@ -57,13 +58,17 @@ if __name__ == "__main__":
             execute:Execute = Execute('prd')
             
             if argv[1].lower() == "start":
-                execute.start()        
+                execute.start()
+                log.register(status='Concluido', description=f"o tempo de execução total screipt foi de {datetime.now() - tempo_inicio}")       
             elif argv[1].lower() == "verificar_disciplinas":
                 execute.constru_code.verificar_disciplinas()
                 print(P("disciplinas verificadas!"))
+                log.register(status='Concluido', description=f"o tempo de execução total da verificação das disciplinas foi de {datetime.now() - tempo_inicio}")
             elif argv[1].lower() == "versionar":
                 execute.versionar()
                 print("arquivos versionados!")
+                log.register(status='Concluido', description=f"o tempo de execução total do versionamento foi de {datetime.now() - tempo_inicio}")
+        
     except Exception as error:
         log.register(status='Error', description="execução no main", exception=traceback.format_exc())
         
