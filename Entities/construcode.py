@@ -280,7 +280,7 @@ class ConstruCode:
                 
             tbody = self.nav.find_element('tag name', 'tbody') 
             for tag_tr in tbody.find_elements(By.TAG_NAME, 'tr'):
-                if ((id:=tag_tr.get_attribute('id')) != "") and (("Liberado com ressalvas" in tag_tr.text) or ("Liberado para obra" in tag_tr.text)):
+                if ((id:=tag_tr.get_attribute('id')) != "") and (("Liberado com ressalvas" in tag_tr.text) or ("Liberado para obra" in tag_tr.text) or ("Em análise" in tag_tr.text)):
                     url:str = os.path.join(base_link, f"Plantas/View?id={id}")
                     name:str = tag_tr.find_element(By.TAG_NAME, 'a').text
                     
