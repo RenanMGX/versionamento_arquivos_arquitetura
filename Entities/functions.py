@@ -54,7 +54,7 @@ class P:
     def __str__(self) -> str:
         return f"{self.date}{self.color + self.__value + Fore.RESET}"
     
-def verificar_arquivos_download(path:str, *,timeout:int=60 * 15, wait:int=0) -> bool:
+def verificar_arquivos_download(path:str, *,timeout:int=5 * 60, wait:int=0) -> bool:
     if wait > 0:
         sleep(wait)
 

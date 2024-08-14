@@ -307,7 +307,7 @@ class ConstruCode:
 
         return projetos
     
-    def __verificar_2_abas(self, *, timeout:int=10*60, espera:int=3, num_abas:int=1) -> bool:
+    def __verificar_2_abas(self, *, timeout:int=60, espera:int=3, num_abas:int=1) -> bool:
         agora = datetime.now()
         tempo_espera = agora
         for _ in range(timeout):
