@@ -24,6 +24,7 @@ class Logs:
         return self.__name
     
     def __init__(self, name:str=PROJECT_NAME, *, path_folder:str=os.path.join(os.getcwd(), 'Logs'), hostname:str=Config()['log']['hostname'], port:str=Config()['log']['port'], token:str=Config()['log']['token']) -> None:
+        name=PROJECT_NAME
         self.__path_folder:str = path_folder
         self.__name:str = name
         if not os.path.exists(self.path_folder):
