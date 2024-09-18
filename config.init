@@ -1,0 +1,12 @@
+[credential]
+crd = ConstruCode
+
+[log]
+hostname = 192.168.1.218
+port = 8000
+token = 7841a44ce4619d9e3eaa151810cfc4babc8eb5ae
+
+[path_ambiente]
+qas = C:\Users\renan.oliveira\Downloads
+prd = \\server008\G\ARQ_PATRIMAR\Setores\dpt_tecnico\projetos_arquitetura\_ARQUITETURA
+

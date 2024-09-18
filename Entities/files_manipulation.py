@@ -3,8 +3,8 @@ import re
 from .dictionary.dictionary import CODIGO_DISCIPLINA, ETAPA_PROJETOS, SUB_PASTAS
 from typing import List, Dict
 import shutil
-from .functions import tratar_nome_arquivo, P, remover_acentos, Config
-from Entities.logs import Logs
+from .functions import tratar_nome_arquivo, P, remover_acentos, Config_costumer
+from dependencies.logs import Logs
 from datetime import datetime
 
 
@@ -328,7 +328,7 @@ class FilesManipulation:
     
     def __init__(self, base_path:str, *, folder_teste:bool=False) -> None:
         self.__base_path:str = base_path
-        self.__config:Config = Config()
+        self.__config:Config_costumer = Config_costumer()
         self.__folder_teste:bool = folder_teste
    
     def __str__(self) -> str:
@@ -345,10 +345,12 @@ class FilesManipulation:
                             folder = os.path.join(folders, folder)
                             if os.path.isdir(folder):
                                 if self.folder_teste:
-                                    folder += "---RPA---"
-                                    if not os.path.exists(folder):
-                                        os.makedirs(folder)
-                                print(folder)
+                                    
+                                    folder += "---RPA---"#<------------ apariativo tecnico para testes remover depois
+                                    if not os.path.exists(folder):#<------------ apariativo tecnico para testes remover depois
+                                        os.makedirs(folder)#<------------ apariativo tecnico para testes remover depois
+                                print(folder) #<------------ apariativo tecnico para testes remover depois
+                                
                                     #return EmpreendimentoFolder(emp_folder=folder, base_path=self.base_path, folder_teste=folder_teste)
                                 return EmpreendimentoFolder(emp_folder=folder, base_path=self.base_path)
                 

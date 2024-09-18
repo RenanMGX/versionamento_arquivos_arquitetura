@@ -74,7 +74,7 @@ def verificar_arquivos_download(path:str, *,timeout:int=5 * 60, wait:int=0) -> b
 def tratar_nome_arquivo(nome:str) -> str:
     return re.sub(r'[|\\/:*?"<>]', "-", nome)
 
-class Config:
+class Config_costumer:
     @property
     def file_path(self) -> str:
         return self.__file_path
@@ -145,7 +145,7 @@ def remover_acentos(texto):
     return unicodedata.normalize('NFKD', texto).encode('ASCII', 'ignore').decode('ASCII')
     
 if __name__ == "__main__":
-    bot = Config()
+    bot = Config_costumer()
     
     print(bot.param['falhou'])
     

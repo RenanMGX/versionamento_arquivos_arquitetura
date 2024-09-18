@@ -1,19 +1,20 @@
 from Entities.construcode import ConstruCode, crd
 from Entities.files_manipulation import FilesManipulation
 from Entities.functions import P
-from Entities.logs import Logs
+from Entities.dependencies.logs import Logs
 from datetime import datetime 
 from getpass import getuser
 from typing import Literal, List
 import sys
 import traceback
+from Entities.dependencies.config import Config
 
 def path_ambiente(param:Literal["prd", "qas"]):
     if param == "qas":
-        return f"C:\\Users\\{getuser()}\\Downloads"
+        return Config()['path_ambiente']['qas']
     elif param == 'prd':
         #if input("Vc está executando em produção. continuar?[s/n] ").lower() == 's':
-        return r"\\server008\G\ARQ_PATRIMAR\Setores\dpt_tecnico\projetos_arquitetura\_ARQUITETURA"
+        return Config()['path_ambiente']['prd']
         #else:
         #    sys.exit()
 

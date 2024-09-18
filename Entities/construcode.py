@@ -6,8 +6,8 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.remote.webelement import WebElement # for typing
 from selenium.webdriver.chrome.webdriver import WebDriver # for typing
 from Entities.files_manipulation import FilesManipulation, EmpreendimentoFolder
-from Entities.functions import Config
-from .credenciais import Credential
+from Entities.functions import Config_costumer
+from dependencies.credenciais import Credential
 from typing import List, Literal, Dict
 from time import sleep
 import shutil
@@ -15,13 +15,15 @@ import re
 import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from .functions import P, verificar_arquivos_download, tratar_nome_arquivo
-from .logs import Logs
+from functions import P, verificar_arquivos_download, tratar_nome_arquivo
+from dependencies.logs import Logs
 import traceback
 import pandas as pd
 import json
+from Entities.dependencies.config import Config
 
-crd:dict = Credential('ConstruCode').load()
+
+crd:dict = Credential(Config()['credential']['crd']).load()
 
 DISCIPLINAS_FILE_PATH:str = os.path.join(os.getcwd(), f"Entities\\dictionary\\disciplinas.json")
 
@@ -159,7 +161,7 @@ class ConstruCode:
         self.__start_nav(self.base_link)
         
         self.__logs:Logs = Logs(name="ConstruCode")
-        self.__config = Config()
+        self.__config = Config_costumer()
     
     @staticmethod   
     def navegar(f):
@@ -320,7 +322,6 @@ class ConstruCode:
             else:
                 tempo_espera = datetime.now()
             agora = datetime.now()
-            
             sleep(1)
         
         raise Exception("não foi possivel esperar ficar com apenas 1 aba aberta")
@@ -347,19 +348,26 @@ class ConstruCode:
                     self.nav.find_element('id', 'downloadOriginalFile').click()
                     break
                 except:
-                    sleep(1)          
-                
+                    if "0" in str(_ + 1):
+                        self.nav.refresh()
+                    sleep(1) 
+            
             self.nav.find_element('xpath', '/html/body/div[13]/div/div[3]/button[2]').click()
+
             self.__verificar_2_abas()
             verificar_arquivos_download(self.nav.download_path, wait=1)
-            files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self) 
-            
+            files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self)
+                 
+            self.nav.refresh()
+                   
             #download dwg
             for _ in range(60):
                 try:
                     self.nav.find_element('id', 'downloadOriginalFile').click()
                     break
                 except:
+                    if "0" in str(_ + 1):
+                        self.nav.refresh()
                     sleep(1)          
                 
             self.nav.find_element('xpath', '/html/body/div[13]/div/div[2]/div[3]/label[2]/input').click()
@@ -382,7 +390,14 @@ class ConstruCode:
     
     @navegar
     def __listar_empreendimentos(self, centro_custo_empreendimento:list=[]) -> dict:
-        self.nav.find_element('xpath', '//*[@id="radix-:r0:"]/div/div/span/p', force=True, tries=2).click()
+        if self.verific_login_window():
+            self.login()
+            self.nav.get(self.base_link)
+        
+        try:    
+            self.nav.find_element('xpath', '//*[@id="radix-:r0:"]/div/div/span/p', force=True, tries=2).click()
+        except:
+            pass
         print(P("Listando Empreendimentos Disponiveis"))
         empreendimentos:dict = {}
         for links in self.nav.find_elements('tag name', 'a'):
