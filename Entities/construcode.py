@@ -164,12 +164,9 @@ class ConstruCode:
     @staticmethod   
     def navegar(f):
         def wrap(self, *args, **kwargs):
-            
-            if self.__verific_login_window():
-                self.__login()
+            if self.verific_login_window():
+                self.login()
             result = f(self, *args, **kwargs)
-
-            
             return result
         return wrap
     
@@ -205,7 +202,7 @@ class ConstruCode:
         # Se a página não for carregada dentro do tempo limite, levanta uma exceção
         raise PageNotFound("não foi possivel carregar a pagina")
     
-    def __verific_login_window(self) -> bool:
+    def verific_login_window(self) -> bool:
         """
         Verifica se a janela de login está aberta.
 
@@ -226,8 +223,8 @@ class ConstruCode:
             return False
 
 
-    def __login(self, no_exception:bool=False) -> bool:
-        #if self.__verific_login_window():
+    def login(self, no_exception:bool=False) -> bool:
+        #if self.verific_login_window():
         self.nav.find_element('id', 'email', tries=1).send_keys(self.email)
         self.nav.find_element('id', 'password', tries=1).send_keys(self.password)
         self.nav.find_element('id', 'password', tries=1).send_keys(Keys.RETURN)
@@ -244,12 +241,17 @@ class ConstruCode:
     @navegar      
     def __listar_arquivos(self, *, emprendimento:str, link:str, base_link:str="https://construcode.com.br/") -> List[dict]:
         print(P(f"Iniciando Listagem de projetos do empreendimento {emprendimento}"))
-        self.nav.get(link)
+        #self.nav.get(link)
         
-        self.nav.find_element('xpath', '//*[@id="menuLateral"]/li[9]/a').click()
-        
+        if (project_id:=re.search(r'(?<=%3D)[\d]+', link)):
+            project_ralatorio_link:str = f"{base_link}Relatorio/Index?id={project_id.group()}"
+        #self.nav.find_element('xpath', '//*[@id="menuLateral"]/li[9]/a').click()
+        self.nav.get(project_ralatorio_link)
+        if self.verific_login_window():
+            self.login()
+            self.nav.get(project_ralatorio_link)
+                
         self.nav.find_element('xpath', '//*[@id="datatableListraMestra_length"]/div/select/option[4]').click()
-        
         
         tbody = self.nav.find_element('tag name', 'tbody',wait=2)
         if tbody.text == 'Nenhum registro encontrado':
@@ -326,8 +328,8 @@ class ConstruCode:
     sleep(1)   
     def __download_dos_projetos(self, *, dados:dict, files_manipulation:EmpreendimentoFolder):
         self.nav.get(dados['url'])
-        if self.__verific_login_window():
-            self.__login()
+        if self.verific_login_window():
+            self.login()
             self.nav.get(dados['url'])
             
         #TEMPORARIO APAGAR DEPOIS   
@@ -545,8 +547,8 @@ class ConstruCode:
     @navegar    
     def verificar_disciplinas(self, empreendimentos:list=[]):
         self.nav.get(self.base_link)
-        # if self.__verific_login_window():
-        #     self.__login()
+        # if self.verific_login_window():
+        #     self.login()
         
 
         empreendimentos_urls = self.__listar_empreendimentos(centro_custo_empreendimento=[re.search(r'[A-z]{1}[0-9]{3}', x).group() for x in empreendimentos]) #type: ignore
