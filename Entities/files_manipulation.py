@@ -59,6 +59,7 @@ class EmpreendimentoFolder:
         self.__base_path:str = base_path
         self.__emp_folder:str = emp_folder
         self.__folder_teste:str = folder_teste
+        self.__config:Config_costumer = Config_costumer()
         
         if (self.__emp_folder.endswith("\\")) or (self.__emp_folder.endswith("/")):
             self.__emp_folder = self.__emp_folder[0:-1]
@@ -304,11 +305,47 @@ class EmpreendimentoFolder:
         for path, folders, files in os.walk(self.emp_folder):
             #print(path)
             if (os.path.basename(path) in ETAPA_PROJETOS.values()) or ((valid_path:=re.search(r'[A-z]{1}[0-9]{3}+-[\d\D]+', os.path.basename(path)))):
+                self.analizados_arquivos_em_analise(path=path, files=files)
                 if (arquivos:=self.__identificar_arquivos_antigos(path)):
                     for arquivo in arquivos:
                         self.__mover_substituidos(arquivo)
                 self.__organizar_subistituidos(path)
+                   
+                   
+    def analizados_arquivos_em_analise(self, *,path:str, files:list, analise:str="Em Analise"):
+        arquivos_em_analise = self.__config.param.get('em_analise')
+        if not arquivos_em_analise:
+            arquivos_em_analise = []                
         
+        if os.path.basename(path) in ETAPA_PROJETOS.values():            
+            path_em_analise = os.path.join(path, analise)
+            if not os.path.exists(path_em_analise):
+                os.makedirs(path_em_analise)
+                
+            for file in files:
+                for arquivo_em_analise in arquivos_em_analise:
+                    if arquivo_em_analise in file:
+                        file = os.path.join(path, file)
+                            
+                        self.__mover_substituidos(file, sub_path=path_em_analise)
+            
+            if (arquivos_na_pasta_em_analise:=os.listdir(path_em_analise)):
+                for arquivo_na_pasta_em_analise in arquivos_na_pasta_em_analise:
+                    try:
+                        arquivo_na_pasta_em_analise_sem_exten = os.path.splitext(arquivo_na_pasta_em_analise)[0]
+                        if not arquivo_na_pasta_em_analise_sem_exten in arquivos_em_analise:  
+                            arquivo_na_pasta_em_analise = os.path.join(path_em_analise, arquivo_na_pasta_em_analise)            
+                            self.__mover_substituidos(arquivo_na_pasta_em_analise, sub_path=path)
+                    except Exception as err:
+                        print(err)
+                
+            if not (arquivos_na_pasta_em_analise:=os.listdir(path_em_analise)):
+                try:
+                    shutil.rmtree(path_em_analise)
+                except:
+                    pass
+
+            
         
 ############################################   
 

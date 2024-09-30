@@ -272,6 +272,8 @@ class ConstruCode:
             executou_primeira_vez = self.__config.param['executou_primeira_vez']
         except KeyError:
             executou_primeira_vez = []
+            
+        em_analise = []
         
         projetos:List[dict] = []
         cont = 0
@@ -291,6 +293,9 @@ class ConstruCode:
                     if not pasta_empreendimento.file_exist(name):
                         parar = False
                         projetos.append({'url': url, 'name': name})
+                    
+                    if "Em análise" in tag_tr.text:
+                        em_analise.append(name)
             
             paginate:WebElement = self.nav.find_element(By.ID, 'datatableListraMestra_next')
             if "disable" in str(paginate.get_attribute("class")):
@@ -305,6 +310,8 @@ class ConstruCode:
                 if parar:
                     continue
                     #break
+
+        self.__config.add(em_analise=list(set(em_analise)))
         
         executou_primeira_vez.append(centro_custo)
         self.__config.add(executou_primeira_vez=list(set(executou_primeira_vez)))
@@ -497,6 +504,14 @@ class ConstruCode:
         
     @navegar 
     def extrair_projetos(self, centro_custo_empreendimento:list=[]):
+        """metodo Principal
+
+        Args:
+            centro_custo_empreendimento (list, optional): lista com centro de custo dos empreendiemnto que serão verificados no site. Defaults to [].
+
+        Raises:
+            Exception: Caso os empreendimentos na lista não sejem encontrados
+        """
         print(P("Iniciando Automação no Site"))
         
         if not os.path.exists(self.disciplinas_file_path):
