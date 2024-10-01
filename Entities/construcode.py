@@ -301,9 +301,14 @@ class ConstruCode:
             if "disable" in str(paginate.get_attribute("class")):
                 break
             else:
-                paginate.location_once_scrolled_into_view
-                sleep(1)
-                paginate.click()
+                for _ in range(60):
+                    try:
+                        paginate.location_once_scrolled_into_view
+                        paginate.click()
+                        break
+                    except:
+                        sleep(1)
+                    
             sleep(1)
             if centro_custo in executou_primeira_vez:
                 #print(P(f"{centro_custo} já executou uma primeira vez"))
