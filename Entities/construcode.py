@@ -387,6 +387,30 @@ class ConstruCode:
             self.__verificar_2_abas()
             verificar_arquivos_download(self.nav.download_path, wait=1)    
             files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self) 
+            
+            self.nav.refresh()
+            
+            try:
+                #download terceiro arquivo
+                for _ in range(60):
+                    try:
+                        self.nav.find_element('id', 'downloadOriginalFile').click()
+                        break
+                    except:
+                        if "0" in str(_ + 1):
+                            self.nav.refresh()
+                        sleep(1) 
+
+                self.nav.find_element('xpath', '/html/body/div[13]/div/div[2]/div[3]/label[3]/input').click()
+                self.nav.find_element('xpath', '/html/body/div[13]/div/div[3]/button[2]').click()
+
+                self.__verificar_2_abas()
+                verificar_arquivos_download(self.nav.download_path, wait=1)
+                files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self)
+                    
+                self.nav.refresh()
+            except:
+                pass
 
             sleep(1)
             print(P(f"Download do Projeto '{nome}' Concluido!", color='green'))
