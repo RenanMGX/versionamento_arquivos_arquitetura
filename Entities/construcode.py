@@ -589,14 +589,14 @@ class ConstruCode:
                 centro = re.search(r'[A-z]{1}[0-9]{3}', key).group() # type: ignore
                 files_manipulation = self.file_manipulation.find_empreendimento(centro)
             except Exception as error:
-                    self.__logs.register(status='Error', description=str(error), exception=traceback.format_exc())
+                    self.__logs.register(status='Report', description=str(error), exception=traceback.format_exc())
                     print(P(str(error), color='red'))
                     continue
             for dados in value:
                 try:
                     self.__download_dos_projetos(dados=dados, files_manipulation=files_manipulation)
                 except Exception as error:
-                    self.__logs.register(status='Error', description=f"Não foi possivel fazer o download do projeto '{dados['url']}'", exception=traceback.format_exc())
+                    self.__logs.register(status='Report', description=f"Não foi possivel fazer o download do projeto '{dados['url']}'", exception=traceback.format_exc())
                     print(P(f"Não foi possivel fazer o download do projeto '{dados['url']}'", color='red'))
                 sleep(2)
         print(P("Download Finalizado", color='yellow'))         
@@ -620,7 +620,7 @@ class ConstruCode:
             try:
                 nomeclatura_disciplinas[key] = self.__obter_disciplinas(url=value)
             except Exception as error:
-                self.__logs.register(status='Error', description=str(error), exception=traceback.format_exc())
+                self.__logs.register(status='Report', description=str(error), exception=traceback.format_exc())
                 print(P(str(error), color='red'))
                 continue
             

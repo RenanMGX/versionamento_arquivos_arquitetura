@@ -297,7 +297,7 @@ class EmpreendimentoFolder:
         
         shutil.copy2(original_file, caminho_para_salvar)
         #print(P(f"arquivo salvo no caminho {caminho_para_salvar}"))
-        self.logs.register(status='Concluido', description=f"Arquivo salvo no caminho {caminho_para_salvar}",exception=None)
+        self.logs.register(status='Report', description=f"Arquivo salvo no caminho {caminho_para_salvar}",exception=None)
         
     def versionar_arquivos(self):
         
