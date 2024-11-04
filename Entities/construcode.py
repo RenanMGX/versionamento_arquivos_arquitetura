@@ -364,6 +364,7 @@ class ConstruCode:
                         self.nav.refresh()
                     sleep(1) 
             
+            sleep(2)
             self.nav.find_element('xpath', '/html/body/div[13]/div/div[3]/button[2]').click()
 
             self.__verificar_2_abas()
@@ -415,7 +416,7 @@ class ConstruCode:
             sleep(1)
             print(P(f"Download do Projeto '{nome}' Concluido!", color='green'))
         except:
-            print(P(f"O projeto '{nome}' tem apenas tipo de arquivo para download", color='cyan'))
+            print(P(f"O projeto '{nome}' tem apenas um tipo de arquivo para download", color='cyan'))
             
             self.__verificar_2_abas()
             verificar_arquivos_download(self.nav.download_path, wait=1)
@@ -440,20 +441,34 @@ class ConstruCode:
             pass
         print(P("Listando Empreendimentos Disponiveis"))
         empreendimentos:dict = {}
-        for links in self.nav.find_elements('tag name', 'a'):
-            if not (emp:=re.search(r'[A-z](?<!\d)\d{3}(?!\d)[^\n]+', links.text, re.IGNORECASE)) is None:
-                if centro_custo_empreendimento:
-                    for centro_custo in centro_custo_empreendimento:
-                        centro_custo_encontrado = re.search(r'[A-z]{1}[0-9]{3}', emp.group(), re.IGNORECASE)
-                        if not centro_custo_encontrado is None:
-                            if centro_custo_encontrado.group() == centro_custo:
-                                empreendimentos[emp.group()] = links.get_attribute('href')
-                else:
-                    empreendimentos[emp.group()] = links.get_attribute('href')
+        for links in self.nav.find_elements('tag name', 'img'):
+            alt = links.get_attribute('alt')
+            if alt:
+                if not (emp:=re.search(r'[A-z](?<!\d)\d{3}(?!\d)[^\n]+', alt, re.IGNORECASE)) is None:
+                    if centro_custo_empreendimento:
+                        for centro_custo in centro_custo_empreendimento:
+                            centro_custo_encontrado = re.search(r'[A-z]{1}[0-9]{3}', emp.group(), re.IGNORECASE)
+                            if not centro_custo_encontrado is None:
+                                if centro_custo_encontrado.group() == centro_custo:
+                                    url_img = links.get_attribute('src')
+                                    if url_img:
+                                        emp_id = re.search(r'(?<=_O)[0-9]+(?=_)', url_img).group()#type: ignore
+                                        empreendimentos[emp.group()] = f"https://web.construcode.com.br/portal/going?url=%2FProjetos%2FIndex%3Fid%3D{emp_id}"
+                                    else:
+                                        Logs().register(status='Report', description=f"não foi possivel determinar o id do emprendimento {centro_custo_encontrado}",)
+                    else:
+                        url_img = links.get_attribute('src')
+                        if url_img:
+                            emp_id = re.search(r'(?<=_O)[0-9]+(?=_)', url_img).group()#type: ignore
+                            empreendimentos[emp.group()] = f"https://web.construcode.com.br/portal/going?url=%2FProjetos%2FIndex%3Fid%3D{emp_id}"
+                        else:
+                            Logs().register(status='Report', description=f"não foi possivel determinar o id do emprendimento {centro_custo_encontrado}",)
+                            
         print(P(f"Empreendimentos encontrados {[key for key,value in empreendimentos.items()]}"))
         
         self.__config.add(empreendimentos=list(set(empreendimentos)))
         
+        #import pdb; pdb.set_trace()
         return empreendimentos
     
     @navegar  
