@@ -429,9 +429,13 @@ class ConstruCode:
         if self.verific_login_window():
             self.login()
             self.nav.get(self.base_link)
-        
+
         try:    
-            self.nav.find_element('xpath', '//*[@id="radix-:r0:"]/div/div/span/p', force=True, tries=2).click()
+            tag_p_s = self.nav.find_elements('tag name', 'p')
+            for tag_p in tag_p_s:
+                if "Não quero ver as novidades" in tag_p.text:
+                    tag_p.click()
+            #self.nav.find_element('xpath', '//*[@id="radix-:r0:"]/div/div/span/p', force=True, tries=2).click()
         except:
             pass
         print(P("Listando Empreendimentos Disponiveis"))
