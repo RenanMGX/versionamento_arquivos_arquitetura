@@ -1,5 +1,7 @@
 import sys
 from typing import Dict, List
+from .logs import Logs
+import traceback
 
 class Arguments:
     def __init__(self, valid_arguments:Dict[str, object]) -> None:
@@ -7,7 +9,6 @@ class Arguments:
         self.__argv:list = sys.argv
         
         self.__start()
-    
     
     def __start(self):
         if len(self.__argv) > 1:
@@ -20,8 +21,11 @@ class Arguments:
                         self.__valid_arguments[selected_argv](self.__argv[2:]) #type: ignore
                     else:
                         self.__valid_arguments[selected_argv]() #type: ignore
-                except Exception as error:
-                    print(type(error), str(error))
+                        
+                    Logs().register(status='Concluido', description="Automação Finalizada com Sucesso!", exception=traceback.format_exc())
+                except Exception as err:
+                    print(type(err), str(err))
+                    Logs().register(status='Error', description=str(err), exception=traceback.format_exc())
             else:
                 print("argumento não existe!")
                 self.__listar_argvs()
@@ -32,6 +36,7 @@ class Arguments:
         print("são permitido apenas os seguintes argumentos: ")
         for key, value in self.__valid_arguments.items():
             print(key)
+        print()
 
 def teste(args):
     print(args)
@@ -40,3 +45,4 @@ if __name__ == "__main__":
     Arguments(valid_arguments={
         "teste": teste
     })
+    

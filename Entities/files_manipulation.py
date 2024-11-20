@@ -295,7 +295,7 @@ class EmpreendimentoFolder:
         if not os.path.exists(os.path.dirname(caminho_para_salvar)):
             os.makedirs(os.path.dirname(caminho_para_salvar))
         
-        shutil.copy2(original_file, caminho_para_salvar)
+        shutil.move(original_file, caminho_para_salvar)
         #print(P(f"arquivo salvo no caminho {caminho_para_salvar}"))
         self.logs.register(status='Report', description=f"Arquivo salvo no caminho {caminho_para_salvar}",exception=None)
         

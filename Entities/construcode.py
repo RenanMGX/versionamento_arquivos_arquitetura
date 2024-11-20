@@ -40,19 +40,17 @@ class Nav(Chrome):
         return self.__download_path
     
     
-    def __init__(self,service: Service = None, keep_alive: bool = True) -> None: #type: ignore
-        self.__download_path:str = os.path.join(os.getcwd(), 'Download_Projects')
+    def __init__(self, empreendimento:str, service: Service = None, keep_alive: bool = True) -> None: #type: ignore
+        self.__download_path:str = os.path.join(os.getcwd(), f'Download_Projects_{empreendimento}_')
         
-        if not os.path.exists(self.download_path):
-            os.makedirs(self.download_path)
-        
-        for file in os.listdir(self.download_path):
-            file = os.path.join(self.download_path, file)
-            
-            if os.path.isfile(file):
-                os.unlink(file)
-            elif os.path.isdir(file):
-                shutil.rmtree(file)
+        if os.path.exists(self.download_path):
+            for file in os.listdir(self.download_path):
+                file = os.path.join(self.download_path, file)
+                
+                if os.path.isfile(file):
+                    os.unlink(file)
+                elif os.path.isdir(file):
+                    shutil.rmtree(file)
                 
         
         prefs:dict = {"download.default_directory": self.download_path}
@@ -135,7 +133,7 @@ class ConstruCode:
         return DISCIPLINAS_FILE_PATH
     
     
-    def __init__(self, *, file_manipulation:FilesManipulation, email:str=crd['email'], password:str=crd['password'], link:str="https://next.construcode.com.br/", date:datetime=datetime.now()) -> None:
+    def __init__(self, *, file_manipulation:FilesManipulation, email:str=crd['email'], password:str=crd['password'], link:str="https://next.construcode.com.br/", date:datetime=datetime.now(), empreendimento:str=datetime.now().strftime('temp_%d%m%Y%H%M%S')) -> None:
         """
         Inicializa uma nova instância da classe ConstruCode.
 
@@ -158,7 +156,7 @@ class ConstruCode:
         self.__password:str = password
         self.__base_link:str = link
         self.__date:datetime = date
-        self.__start_nav(self.base_link)
+        self.__start_nav(self.base_link, empreendimento=empreendimento)
         
         self.__logs:Logs = Logs(name="ConstruCode")
         self.__config = Config_costumer()
@@ -173,7 +171,7 @@ class ConstruCode:
         return wrap
     
     @navegar
-    def __start_nav(self, link:str, *, timeout:int=5):
+    def __start_nav(self, link:str, *, timeout:int=5, empreendimento:str):
         """
         Inicia a navegação para o link fornecido e tenta carregar a página.
 
@@ -191,7 +189,7 @@ class ConstruCode:
         for _ in range(timeout):
             try:
                 # Cria uma nova instância do navegador Nav
-                self.__nav:Nav = Nav()
+                self.__nav:Nav = Nav(empreendimento=empreendimento)
                 # Tenta acessar o link fornecido
                 self.nav.get(link)
                 print(P("Pagina Carregada!"))
@@ -232,6 +230,7 @@ class ConstruCode:
         self.nav.find_element('id', 'password', tries=1).send_keys(Keys.RETURN)
             
         if "senha inserida está incorreta." in self.nav.find_element('id', 'login-form', tries=1, wait=2, force=True).text:
+            print(self.email, self.password)
             raise LoginError("senha inserida está incorreta.")
         print(P("Login Efetuado"))
         return True
@@ -340,6 +339,9 @@ class ConstruCode:
             
     sleep(1)   
     def __download_dos_projetos(self, *, dados:dict, files_manipulation:EmpreendimentoFolder):
+        if not os.path.exists(self.nav.download_path):
+            os.makedirs(self.nav.download_path)
+        
         self.nav.get(dados['url'])
         if self.verific_login_window():
             self.login()
@@ -656,7 +658,9 @@ class ConstruCode:
         pd.DataFrame(nomeclatura_disciplinas).to_json(self.disciplinas_file_path)
         print(P(f"Siglas das Nomeclaturas salvas no caminho {self.disciplinas_file_path}"))
 
-        
+    def obter_empreendimentos(self) -> list:
+        emp:dict =  self.__listar_empreendimentos()
+        return [re.search(r'[A-z]{1}[0-9]{3}',key).group() for key,value in emp.items()]#type: ignore
         
 #https://www.construcode.com.br/Plantas/View?id=1516854
 if __name__ == "__main__":

@@ -127,7 +127,8 @@ class Credential:
         return self.criar_cifra(text, -key)
         
 if __name__ == "__main__":
-    crd = Credential("")
+    crd = Credential("ConstruCode_Renan")
     
+    # Sunbed#402*
     
     print(crd.load())
