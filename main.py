@@ -38,8 +38,6 @@ class Execute:
         del files
         del constru_code
         
-        print(empreendimentos, end=" <----------------------\n")
-        
         if empreendimentos:
             tasks: List[multiprocessing.context.Process] = []
             
@@ -50,7 +48,7 @@ class Execute:
                 task.start()
             
             for task in tasks:
-                task.close()
+                task.join()
             
         else:
             Logs().register(status='Report', description="sem empreendimento encontrado")
@@ -62,6 +60,8 @@ class Execute:
                     shutil.rmtree(os.path.join(path, x))
                 except:
                     pass
+        
+        Logs().register(status='Concluido', description=f"Concluido em {datetime.now() - time_inicio}")
         
             
     @staticmethod
@@ -103,33 +103,4 @@ if __name__ == "__main__":
         "teste": Execute.teste
     })
     
-    sys.exit()
-    # log = Logs()
-    # try:
-    #     tempo_inicio:datetime = datetime.now()
-    #     argv:List[str] = sys.argv
-        
-    #     if len(argv) <= 1:
-    #         print(P("é necessario informar os argumentos para iniciar"))
-    #         print(P("[start, verificar_disciplinas, versionar]"))
-    #     else:
-    #         execute:Execute = Execute()
-            
-    #         if argv[1].lower() == "start":
-    #             execute.start()
-    #             log.register(status='Concluido', description=f"o tempo de execução total script foi de {datetime.now() - tempo_inicio}")       
-    #         elif argv[1].lower() == "verificar_disciplinas":
-    #             execute.constru_code.verificar_disciplinas()
-    #             print(P("disciplinas verificadas!"))
-    #             log.register(status='Concluido', description=f"o tempo de execução total da verificação das disciplinas foi de {datetime.now() - tempo_inicio}")
-    #         elif argv[1].lower() == "versionar":
-    #             execute.versionar()
-    #             print("arquivos versionados!")
-    #             log.register(status='Concluido', description=f"o tempo de execução total do versionamento foi de {datetime.now() - tempo_inicio}")
-    #         if argv[1].lower() == "teste":
-    #             execute.teste()
-    #             log.register(status='Concluido', description=f"o tempo de execução total script foi de {datetime.now() - tempo_inicio}")       
-        
-    # except Exception as error:
-    #     log.register(status='Error', description="execução no main", exception=traceback.format_exc())
         
