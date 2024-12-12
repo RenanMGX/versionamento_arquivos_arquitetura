@@ -145,7 +145,7 @@ class EmpreendimentoFolder:
             except:
                 disciplina = os.path.join(target, f"XXXX-{tratar_nome_arquivo(disciplina)}".upper())
         except:
-            disciplina = os.path.join(target, f"** Não Identificado **\\XXXX-{codigo}".upper())
+            disciplina = os.path.join(target, f"-- Não Identificado --\\XXXX-{codigo}".upper())
             
         return disciplina.replace("XXXX", self.centro)
     
@@ -157,7 +157,7 @@ class EmpreendimentoFolder:
             etapa = ETAPA_PROJETOS[codigo]
             etapa = os.path.join(target, tratar_nome_arquivo(etapa.upper()))
         except:
-            etapa = os.path.join(target, f"** Não Identificado **\\--{codigo}--".upper())
+            etapa = os.path.join(target, f"-- Não Identificado --\\--{codigo}--".upper())
         
         return etapa
     
