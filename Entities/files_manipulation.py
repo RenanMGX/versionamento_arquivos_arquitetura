@@ -381,14 +381,14 @@ class FilesManipulation:
                         if not result is None:
                             folder = os.path.join(folders, folder)
                             if os.path.isdir(folder):
-                                if self.folder_teste:
+                                # if self.folder_teste: #<------------ apariativo tecnico para testes remover depois
                                     
-                                    folder += "---RPA---"#<------------ apariativo tecnico para testes remover depois
-                                    if not os.path.exists(folder):#<------------ apariativo tecnico para testes remover depois
-                                        os.makedirs(folder)#<------------ apariativo tecnico para testes remover depois
-                                print(folder) #<------------ apariativo tecnico para testes remover depois
+                                #     folder += "---RPA---"#<------------ apariativo tecnico para testes remover depois
+                                #     if not os.path.exists(folder):#<------------ apariativo tecnico para testes remover depois
+                                #         os.makedirs(folder)#<------------ apariativo tecnico para testes remover depois
+                                # print(folder) #<------------ apariativo tecnico para testes remover depois
                                 
-                                    #return EmpreendimentoFolder(emp_folder=folder, base_path=self.base_path, folder_teste=folder_teste)
+                                    ###return EmpreendimentoFolder(emp_folder=folder, base_path=self.base_path, folder_teste=folder_teste)
                                 return EmpreendimentoFolder(emp_folder=folder, base_path=self.base_path)
                 
             new_path = os.path.join(self.base_path, f"## Não Encontrados ##\\{centro_custo}")
