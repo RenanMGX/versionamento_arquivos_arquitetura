@@ -367,7 +367,10 @@ class ConstruCode:
                     sleep(1) 
             
             sleep(2)
-            self.nav.find_element('xpath', '/html/body/div[13]/div/div[3]/button[2]').click()
+            #import pdb; pdb.set_trace()
+            #self.nav.find_element('xpath', '/html/body/div[13]/div/div[3]/button[2]').click()
+            self.nav.find_element('xpath', '/html/body/div[9]/div/div[3]/button[2]').click()
+                                           
 
             self.__verificar_2_abas()
             verificar_arquivos_download(self.nav.download_path, wait=1)
@@ -386,7 +389,7 @@ class ConstruCode:
                     sleep(1)          
                 
             self.nav.find_element('xpath', '/html/body/div[13]/div/div[2]/div[3]/label[2]/input').click()
-            self.nav.find_element('xpath', '/html/body/div[13]/div/div[3]/button[2]').click()
+            self.nav.find_element('xpath', '/html/body/div[9]/div/div[3]/button[2]').click()
             self.__verificar_2_abas()
             verificar_arquivos_download(self.nav.download_path, wait=1)    
             files_manipulation.copy_file_to(original_file=self.ultimo_download(), target=target, constucode_obj=self) 
@@ -405,7 +408,7 @@ class ConstruCode:
                         sleep(1) 
 
                 self.nav.find_element('xpath', '/html/body/div[13]/div/div[2]/div[3]/label[3]/input').click()
-                self.nav.find_element('xpath', '/html/body/div[13]/div/div[3]/button[2]').click()
+                self.nav.find_element('xpath', '/html/body/div[9]/div/div[3]/button[2]').click()
 
                 self.__verificar_2_abas()
                 verificar_arquivos_download(self.nav.download_path, wait=1)
