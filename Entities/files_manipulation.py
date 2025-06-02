@@ -428,4 +428,5 @@ class FilesManipulation:
         
 
 if __name__ == "__main__":
-    pass
+    bot = FilesManipulation(base_path=r'\\server008\G\ARQ_PATRIMAR\Setores\dpt_tecnico\projetos_arquitetura\_ARQUITETURA')
+    print(bot)

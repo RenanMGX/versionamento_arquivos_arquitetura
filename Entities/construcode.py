@@ -133,7 +133,7 @@ class ConstruCode:
         return DISCIPLINAS_FILE_PATH
     
     
-    def __init__(self, *, file_manipulation:FilesManipulation, email:str=crd['email'], password:str=crd['password'], link:str="https://next.construcode.com.br/", date:datetime=datetime.now(), empreendimento:str=datetime.now().strftime('temp_%d%m%Y%H%M%S')) -> None:
+    def __init__(self, *, file_manipulation:FilesManipulation, email:str=crd['email'], password:str=crd['password'], link:str="https://web.construcode.com.br/", date:datetime=datetime.now(), empreendimento:str=datetime.now().strftime('temp_%d%m%Y%H%M%S')) -> None:
         """
         Inicializa uma nova instância da classe ConstruCode.
 
