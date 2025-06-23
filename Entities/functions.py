@@ -8,6 +8,7 @@ import json
 from typing import Dict, Literal
 import unicodedata
 from colorama import Fore
+from patrimar_dependencies.sharepointfolder import SharePointFolders
 
 def fechar_excel(path:str):
     try:
@@ -84,7 +85,7 @@ class Config_costumer:
         return self.__param
     
     
-    def __init__(self, *, file_path:str=os.path.join(os.getcwd(), 'Entities\\config.json'), speak:bool=False) -> None:
+    def __init__(self, *, file_path:str=os.path.join(os.environ['json_folders_path'], 'config.json'), speak:bool=False) -> None:        
         self.__speak:bool = speak
         if not file_path.endswith('.json'):
             file_path += '.json'
@@ -100,7 +101,7 @@ class Config_costumer:
         
         if not os.path.exists(file_path):
             with open(file_path, 'w', encoding='utf-8') as _file:
-                json.dump({}, _file)
+                json.dump({}, _file, indent=4, ensure_ascii=False)
         
         self.__file_path:str = file_path
         
@@ -134,7 +135,7 @@ class Config_costumer:
     
     def __save(self) -> None:
         with open(self.file_path, 'w', encoding='utf-8')as _file:
-            json.dump(self.param, _file)
+            json.dump(self.param, _file, indent=4, ensure_ascii=False)
             
     def __load(self) -> None:
         with open(self.file_path, 'r', encoding='utf-8')as _file:

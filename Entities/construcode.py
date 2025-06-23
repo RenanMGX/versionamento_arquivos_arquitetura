@@ -7,7 +7,6 @@ from selenium.webdriver.remote.webelement import WebElement # for typing
 from selenium.webdriver.chrome.webdriver import WebDriver # for typing
 from Entities.files_manipulation import FilesManipulation, EmpreendimentoFolder
 from Entities.functions import Config_costumer
-from dependencies.credenciais import Credential
 from typing import List, Literal, Dict
 from time import sleep
 import shutil
@@ -16,16 +15,17 @@ import os
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from functions import P, verificar_arquivos_download, tratar_nome_arquivo
-from dependencies.logs import Logs
 import traceback
 import pandas as pd
 import json
-from Entities.dependencies.config import Config
+from botcity.maestro import * # type: ignore
 
 
-crd:dict = Credential(Config()['credential']['crd']).load()
+#crd:dict = Credential(Config()['credential']['crd']).load()
 
-DISCIPLINAS_FILE_PATH:str = os.path.join(os.getcwd(), f"Entities\\dictionary\\disciplinas.json")
+#DISCIPLINAS_FILE_PATH:str = os.path.join(os.getcwd(), f"Entities\\dictionary\\disciplinas.json")
+DISCIPLINAS_FILE_PATH:str = os.path.join(os.environ['json_folders_path'], 'disciplinas.json')
+
 
 class LoginError(Exception):
     def __init__(self, *args: object) -> None:
@@ -41,8 +41,8 @@ class Nav(Chrome):
     
     
     def __init__(self, empreendimento:str, service: Service = None, keep_alive: bool = True) -> None: #type: ignore
-        self.__download_path:str = os.path.join(os.getcwd(), f'Download_Projects_{empreendimento}_')
-        
+        self.__download_path:str = os.path.join(os.getcwd(), 'Downloads', f'Download_Projects_{empreendimento}_')
+        print(self.download_path)
         if os.path.exists(self.download_path):
             for file in os.listdir(self.download_path):
                 file = os.path.join(self.download_path, file)
@@ -133,7 +133,7 @@ class ConstruCode:
         return DISCIPLINAS_FILE_PATH
     
     
-    def __init__(self, *, file_manipulation:FilesManipulation, email:str=crd['email'], password:str=crd['password'], link:str="https://web.construcode.com.br/", date:datetime=datetime.now(), empreendimento:str=datetime.now().strftime('temp_%d%m%Y%H%M%S')) -> None:
+    def __init__(self, *, maestro:BotMaestroSDK|None=None, file_manipulation:FilesManipulation, email:str, password:str, link:str="https://web.construcode.com.br/", date:datetime=datetime.now(), empreendimento:str=datetime.now().strftime('temp_%d%m%Y%H%M%S')) -> None:
         """
         Inicializa uma nova instância da classe ConstruCode.
 
@@ -158,7 +158,7 @@ class ConstruCode:
         self.__date:datetime = date
         self.__start_nav(self.base_link, empreendimento=empreendimento)
         
-        self.__logs:Logs = Logs(name="ConstruCode")
+        self.__maestro:BotMaestroSDK|None = maestro
         self.__config = Config_costumer()
     
     @staticmethod   
@@ -225,6 +225,11 @@ class ConstruCode:
 
     def login(self, no_exception:bool=False) -> bool:
         #if self.verific_login_window():
+        try:
+            self.nav.find_element('id', 'email', tries=1)
+        except:
+            return True
+        
         self.nav.find_element('id', 'email', tries=1).send_keys(self.email)
         self.nav.find_element('id', 'password', tries=1).send_keys(self.password)
         self.nav.find_element('id', 'password', tries=1).send_keys(Keys.RETURN)
@@ -460,7 +465,14 @@ class ConstruCode:
                                         emp_id = re.search(r'(?<=_O)[0-9]+(?=_)', url_img).group()#type: ignore
                                         empreendimentos[emp.group()] = f"https://web.construcode.com.br/portal/going?url=%2FProjetos%2FIndex%3Fid%3D{emp_id}"
                                     else:
-                                        Logs().register(status='Report', description=f"não foi possivel determinar o id do emprendimento {centro_custo_encontrado}",)
+                                        if not self.__maestro is None:
+                                            self.__maestro.alert(
+                                                task_id=self.__maestro.get_execution().task_id,
+                                                title="Erro em _listar_empreendimentos()",
+                                                message=f"não foi possivel determinar o id do emprendimento {centro_custo_encontrado}",
+                                                alert_type=AlertType.INFO
+                                            )
+                                        
                     else:
                         url_img = links.get_attribute('src')
                         if url_img:
@@ -485,6 +497,8 @@ class ConstruCode:
         else:
             emp_id:str = get_id.group()
         
+        self.nav.get(f"https://www.construcode.com.br/PadraoNomenclatura/Index?id={emp_id}")
+        self.login()
         self.nav.get(f"https://www.construcode.com.br/PadraoNomenclatura/Index?id={emp_id}")
         
         self.nav.find_element('xpath', '/html/body/div[1]/main/div/div[1]/div/div/div[2]/div/div/table/tbody/tr/td[4]/a[1]/i').click()
@@ -613,14 +627,28 @@ class ConstruCode:
                 centro = re.search(r'[A-z]{1}[0-9]{3}', key).group() # type: ignore
                 files_manipulation = self.file_manipulation.find_empreendimento(centro)
             except Exception as error:
-                    self.__logs.register(status='Report', description=str(error), exception=traceback.format_exc())
+                    if not self.__maestro is None:
+                        self.__maestro.alert(
+                            task_id=self.__maestro.get_execution().task_id,
+                            title="Erro em extrair_projetos",
+                            message=str(error),
+                            alert_type=AlertType.INFO
+                        )
+                
                     print(P(str(error), color='red'))
                     continue
             for dados in value:
                 try:
                     self.__download_dos_projetos(dados=dados, files_manipulation=files_manipulation)
                 except Exception as error:
-                    self.__logs.register(status='Report', description=f"Não foi possivel fazer o download do projeto '{dados['url']}'", exception=traceback.format_exc())
+                    if not self.__maestro is None:
+                        self.__maestro.alert(
+                            task_id=self.__maestro.get_execution().task_id,
+                            title="Erro em extrair_projetos",
+                            message=f"Não foi possivel fazer o download do projeto '{dados['url']}'",
+                            alert_type=AlertType.INFO
+                        )
+                    
                     print(P(f"Não foi possivel fazer o download do projeto '{dados['url']}'", color='red'))
                 sleep(2)
         print(P("Download Finalizado", color='yellow'))         
@@ -644,7 +672,13 @@ class ConstruCode:
             try:
                 nomeclatura_disciplinas[key] = self.__obter_disciplinas(url=value)
             except Exception as error:
-                self.__logs.register(status='Report', description=str(error), exception=traceback.format_exc())
+                if not self.__maestro is None:
+                    self.__maestro.alert(
+                        task_id=self.__maestro.get_execution().task_id,
+                        title="Erro em verificar_disciplinas",
+                        message=str(error),
+                        alert_type=AlertType.INFO
+                    )                
                 print(P(str(error), color='red'))
                 continue
             
@@ -658,7 +692,7 @@ class ConstruCode:
                 if not key in nomeclatura_disciplinas:
                     nomeclatura_disciplinas[key] = value
         
-        pd.DataFrame(nomeclatura_disciplinas).to_json(self.disciplinas_file_path)
+        pd.DataFrame(nomeclatura_disciplinas).to_json(self.disciplinas_file_path, indent=4, force_ascii=False)
         print(P(f"Siglas das Nomeclaturas salvas no caminho {self.disciplinas_file_path}"))
 
     def obter_empreendimentos(self) -> list:

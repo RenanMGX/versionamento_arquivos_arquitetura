@@ -4,8 +4,8 @@ from .dictionary.dictionary import CODIGO_DISCIPLINA, ETAPA_PROJETOS, SUB_PASTAS
 from typing import List, Dict
 import shutil
 from .functions import tratar_nome_arquivo, P, remover_acentos, Config_costumer
-from dependencies.logs import Logs
 from datetime import datetime
+from botcity.maestro import * #type: ignore
 
 
 class EmpreendimentoFolder:
@@ -36,17 +36,13 @@ class EmpreendimentoFolder:
         if not centro is None:
             return centro.group()
         raise Exception(f"centro de custo não foi identificado do caminho {emp_folder}")
-    
-    @property
-    def logs(self):
-        return self.__logs
-    
+        
     @property
     def folder_teste(self) -> str:
         return self.__folder_teste
     
     
-    def __init__(self, *, emp_folder:str, base_path:str, folder_teste:str="") -> None:
+    def __init__(self, *, maestro:BotMaestroSDK|None, emp_folder:str, base_path:str, folder_teste:str="") -> None:
         """Metodo construtor ele ira listar os arquivos dentro da pasta
 
         Args:
@@ -58,6 +54,7 @@ class EmpreendimentoFolder:
         """
         self.__base_path:str = base_path
         
+        self.__maestro:BotMaestroSDK|None = maestro
         
         self.__emp_folder:str = emp_folder
         self.__folder_teste:str = folder_teste
@@ -74,7 +71,6 @@ class EmpreendimentoFolder:
         
         self.__value:List[str] = self.__list_files(self.__emp_folder)
         
-        self.__logs:Logs = Logs(name="EmpreendimentoFolder")
         
     def __str__(self) -> str:
         return self.__emp_folder
@@ -302,7 +298,13 @@ class EmpreendimentoFolder:
         
         shutil.move(original_file, caminho_para_salvar)
         #print(P(f"arquivo salvo no caminho {caminho_para_salvar}"))
-        self.logs.register(status='Report', description=f"Arquivo salvo no caminho {caminho_para_salvar}",exception=None)
+        if not self.__maestro is None:
+            self.__maestro.alert(
+                task_id=self.__maestro.get_execution().task_id,
+                title="Erro em Copy_file_to",
+                message=f"Arquivo salvo no caminho {caminho_para_salvar}",
+                alert_type=AlertType.INFO
+            )
         
     def versionar_arquivos(self):
         
@@ -368,10 +370,12 @@ class FilesManipulation:
     def folder_teste(self) -> bool:
         return self.__folder_teste
     
-    def __init__(self, base_path:str, *, folder_teste:bool=False) -> None:
+    def __init__(self, base_path:str, *, maestro:BotMaestroSDK|None=None, folder_teste:bool=False) -> None:
         self.__base_path:str = base_path
         self.__config:Config_costumer = Config_costumer()
         self.__folder_teste:bool = folder_teste
+        
+        self.__maestro:BotMaestroSDK|None = maestro
    
     def __str__(self) -> str:
         return self.base_path
@@ -395,7 +399,7 @@ class FilesManipulation:
                                 # print(folder) #<------------ apariativo tecnico para testes remover depois
                                 
                                     ###return EmpreendimentoFolder(emp_folder=folder, base_path=self.base_path, folder_teste=folder_teste)
-                                return EmpreendimentoFolder(emp_folder=folder, base_path=self.base_path)
+                                return EmpreendimentoFolder(maestro=self.__maestro, emp_folder=folder, base_path=self.base_path)
                 
             new_path = os.path.join(self.base_path, f"## Não Encontrados ##\\{centro_custo}")
             if not os.path.exists(new_path):

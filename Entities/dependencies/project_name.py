@@ -1,1 +1,0 @@
-PROJECT_NAME:str = "Versionamento de Arquivos"

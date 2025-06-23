@@ -1,37 +1,39 @@
-from Entities.construcode import ConstruCode, crd
+import os
+from patrimar_dependencies.sharepointfolder import SharePointFolders
+sharepoint_path = SharePointFolders(r'RPA - Dados\Configs\versionamento arquivos ConstruCode').value
+if not sharepoint_path:
+    raise FileExistsError(f"O caminho do Sharepoint '{sharepoint_path}' não foi encontrado!")
+os.environ['json_folders_path'] = sharepoint_path
+
+from Entities.construcode import ConstruCode
 from Entities.files_manipulation import FilesManipulation
 from Entities.functions import P
-from Entities.dependencies.logs import Logs
 from datetime import datetime 
 from getpass import getuser
 from typing import Literal, List
 import sys
 import traceback
-from Entities.dependencies.config import Config
-from Entities.dependencies.arguments import Arguments
 import multiprocessing
 import multiprocessing.context
 import shutil
-import os
+from botcity.maestro import * #type: ignore
 
-def path_ambiente(param:str):
-    if param == "qas":
-        return Config()['path_ambiente']['qas']
-    elif param == 'prd':
-        #if input("Vc está executando em produção. continuar?[s/n] ").lower() == 's':
-        return Config()['path_ambiente']['prd']
-        #else:
-        #    sys.exit()
+# def path_ambiente(param:str):
+#     if param == "qas":
+#         return Config()['path_ambiente']['qas']
+#     elif param == 'prd':
+#         #if input("Vc está executando em produção. continuar?[s/n] ").lower() == 's':
+#         return Config()['path_ambiente']['prd']
+#         #else:
+#         #    sys.exit()
 
-class Execute:
-    _path_ambiente = Config()['path_ambiente'][Config()['ambiente']['ambiente']]
+class ExecuteAPP:
+    #_path_ambiente = f'C:\\Users\\{os.getlogin()}\\Downloads'
     
     @staticmethod
-    def start():
-        files:FilesManipulation = FilesManipulation(Execute._path_ambiente, folder_teste=True)
-        constru_code:ConstruCode = ConstruCode(file_manipulation=files)
-        
-        time_inicio:datetime = datetime.now()
+    def start(*,email:str, password:str, path_ambiente:str, maestro:BotMaestroSDK|None=None):
+        files:FilesManipulation = FilesManipulation(path_ambiente, folder_teste=True)
+        constru_code:ConstruCode = ConstruCode(file_manipulation=files, maestro=maestro, email=email, password=password)
         
         empreendimentos:list = constru_code.obter_empreendimentos()
         
@@ -42,7 +44,7 @@ class Execute:
             tasks: List[multiprocessing.context.Process] = []
             
             for empre in empreendimentos:
-                tasks.append(multiprocessing.Process(target=Execute.extract, args=([empre],)))
+                tasks.append(multiprocessing.Process(target=ExecuteAPP.extract, args=([empre],email, password, maestro)))
             
             for task in tasks:
                 task.start()
@@ -51,7 +53,14 @@ class Execute:
                 task.join()
             
         else:
-            Logs().register(status='Report', description="sem empreendimento encontrado")
+            if not maestro is None:
+                maestro.alert(
+                    task_id=maestro.get_execution().task_id,
+                    title="Erro em ExecuteAPP.start()",
+                    message="sem empreendimento encontrado",
+                    alert_type=AlertType.INFO
+                )
+            
             
         path = os.getcwd()
         for x in os.listdir(path):
@@ -60,47 +69,56 @@ class Execute:
                     shutil.rmtree(os.path.join(path, x))
                 except:
                     pass
-        
-        Logs().register(status='Concluido', description=f"Concluido em {datetime.now() - time_inicio}")
-        
             
     @staticmethod
-    def extract(empreendimento:list):
-        files:FilesManipulation = FilesManipulation(Execute._path_ambiente, folder_teste=True)
-        constru_code:ConstruCode = ConstruCode(file_manipulation=files, empreendimento=empreendimento[0])
+    def extract(empreendimento:list, email:str, password:str, path_ambiente:str, maestro: BotMaestroSDK|None=None):
+        files:FilesManipulation = FilesManipulation(path_ambiente, folder_teste=True)
+        constru_code:ConstruCode = ConstruCode(file_manipulation=files, empreendimento=empreendimento[0], email=email, password=password, maestro=maestro)
         
         constru_code.extrair_projetos(empreendimento)
             
-        Execute.versionar(files)
+        ExecuteAPP.versionar(files)
             
         print(P(f"Emprendimento {empreendimento} Finalizado!"))
         
         
     @staticmethod    
-    def versionar(files:FilesManipulation = FilesManipulation(Config()['path_ambiente'][Config()['ambiente']['ambiente']], folder_teste=True)) -> None:
+    def versionar(files:FilesManipulation, folder_teste=True) -> None:
         for empreendimento in files.find_empreendimentos():
             empreendimento.versionar_arquivos()
             
     @staticmethod
-    def verify():
-        files:FilesManipulation = FilesManipulation(Execute._path_ambiente, folder_teste=True)
-        constru_code:ConstruCode = ConstruCode(file_manipulation=files)
+    def verify(*, email:str, password:str, path_ambiente:str, maestro: BotMaestroSDK|None=None):
+        files:FilesManipulation = FilesManipulation(path_ambiente, folder_teste=True)
+        constru_code:ConstruCode = ConstruCode(file_manipulation=files, email=email, password=password, maestro=maestro)
         
         constru_code.verificar_disciplinas()
     
     @staticmethod       
-    def teste():
-        files:FilesManipulation = FilesManipulation(Execute._path_ambiente, folder_teste=True)
-        constru_code:ConstruCode = ConstruCode(file_manipulation=files)
+    def teste(*, email:str, password:str, path_ambiente:str, maestro: BotMaestroSDK|None=None):
+        files:FilesManipulation = FilesManipulation(path_ambiente, folder_teste=True)
+        constru_code:ConstruCode = ConstruCode(file_manipulation=files, email=email, password=password, maestro=maestro)
         print(constru_code.obter_empreendimentos())
         
 if __name__ == "__main__":
     multiprocessing.freeze_support()
-    Arguments({
-        "start": Execute.start,
-        "verificar_disciplinas": Execute.verify,
-        "versionar": Execute.versionar,
-        "teste": Execute.teste
-    })
+    x = {
+        "start": ExecuteAPP.start,
+        "verificar_disciplinas": ExecuteAPP.verify,
+        "versionar": ExecuteAPP.versionar,
+        "teste": ExecuteAPP.teste
+    }
+    
+    from patrimar_dependencies.credenciais import Credential
+    
+    crd = Credential(
+        path_raiz=SharePointFolders(r'RPA - Dados\CRD\.patrimar_rpa\credenciais').value,
+        name_file="ConstruCode.json"
+    ).load()
+    
+    
+    
+    
+    ExecuteAPP.start(email=crd['email'], password=crd['password'], path_ambiente=f'C:\\Users\\{os.getlogin()}\\Downloads')
     
         

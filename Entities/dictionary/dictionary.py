@@ -2,7 +2,7 @@ import os
 import json
 from typing import Dict
 
-def ler_disciplinas(file_path:str=os.path.join(os.path.dirname(os.path.abspath(__file__)), "disciplinas.json")):
+def ler_disciplinas(file_path:str= os.path.join(os.environ['json_folders_path'], 'disciplinas.json')):
     with open(file_path, 'r', encoding='utf-8')as _file:
         return json.load(_file)
 
