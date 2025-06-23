@@ -57,6 +57,8 @@ class EmpreendimentoFolder:
             FileNotFoundError: caso não encontre o arquivo
         """
         self.__base_path:str = base_path
+        
+        
         self.__emp_folder:str = emp_folder
         self.__folder_teste:str = folder_teste
         self.__config:Config_costumer = Config_costumer()
@@ -66,6 +68,9 @@ class EmpreendimentoFolder:
             
         if not os.path.exists(self.__emp_folder):
             raise FileNotFoundError(f"Caminho não encontrado! -> {self.__emp_folder}")       
+        
+        if ("00-OBRAS NOVOLAR RJ" in self.__emp_folder) or ("00-OBRAS PATRIMAR RJ" in self.emp_folder):
+            self.__emp_folder = os.path.join(self.__emp_folder, '#CONSTRUCODE')
         
         self.__value:List[str] = self.__list_files(self.__emp_folder)
         
@@ -139,7 +144,7 @@ class EmpreendimentoFolder:
                 SELECTED_CODIGO_DISCIPLINA = value
         
         try:
-            disciplina = SELECTED_CODIGO_DISCIPLINA[codigo]
+            disciplina = SELECTED_CODIGO_DISCIPLINA[codigo] #type: ignore
             try:
                 disciplina = os.path.join(target, f"{SUB_PASTAS[codigo]}\\XXXX-{tratar_nome_arquivo(disciplina)}".upper())
             except:
@@ -380,6 +385,7 @@ class FilesManipulation:
                         result = re.search(centro_custo, folder, re.IGNORECASE)
                         if not result is None:
                             folder = os.path.join(folders, folder)
+                            
                             if os.path.isdir(folder):
                                 # if self.folder_teste: #<------------ apariativo tecnico para testes remover depois
                                     
@@ -429,4 +435,6 @@ class FilesManipulation:
 
 if __name__ == "__main__":
     bot = FilesManipulation(base_path=r'\\server008\G\ARQ_PATRIMAR\Setores\dpt_tecnico\projetos_arquitetura\_ARQUITETURA')
-    print(bot)
+    x = bot.find_empreendimento("E062")
+    
+    print(x)

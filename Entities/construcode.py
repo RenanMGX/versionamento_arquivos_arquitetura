@@ -60,7 +60,7 @@ class Nav(Chrome):
         super().__init__(chrome_options, service, keep_alive)
         print(P("Instanciando Navegador"))
     
-    def find_element(self,
+    def find_element(self, #type: ignore
                     by:Literal["id", "class name", "css selector", "link text", "name", "partial link text", "tag name", "xpath"]="id",
                     value: str | None = None,
                     *,
@@ -83,7 +83,7 @@ class Nav(Chrome):
         
         raise Exception(f"'{by}': '{value}' não foi encontrado")
 
-    def find_elements(self, 
+    def find_elements(self,  #type: ignore
                     by:Literal["id", "class name", "css selector", "link text", "name", "partial link text", "tag name", "xpath"]="id",
                     value: str | None = None,
                     *,
@@ -247,10 +247,10 @@ class ConstruCode:
         if (project_id:=re.search(r'(?<=%3D)[\d]+', link)):
             project_ralatorio_link:str = f"{base_link}Relatorio/Index?id={project_id.group()}"
         #self.nav.find_element('xpath', '//*[@id="menuLateral"]/li[9]/a').click()
-        self.nav.get(project_ralatorio_link)
+        self.nav.get(project_ralatorio_link) #type: ignore
         if self.verific_login_window():
             self.login()
-            self.nav.get(project_ralatorio_link)
+            self.nav.get(project_ralatorio_link) #type: ignore
                 
         self.nav.find_element('xpath', '//*[@id="datatableListraMestra_length"]/div/select/option[4]').click()
         
@@ -467,7 +467,7 @@ class ConstruCode:
                             emp_id = re.search(r'(?<=_O)[0-9]+(?=_)', url_img).group()#type: ignore
                             empreendimentos[emp.group()] = f"https://web.construcode.com.br/portal/going?url=%2FProjetos%2FIndex%3Fid%3D{emp_id}"
                         else:
-                            Logs().register(status='Report', description=f"não foi possivel determinar o id do emprendimento {centro_custo_encontrado}",)
+                            Logs().register(status='Report', description=f"não foi possivel determinar o id do emprendimento {centro_custo_encontrado}",) #type: ignore
                             
         print(P(f"Empreendimentos encontrados {[key for key,value in empreendimentos.items()]}"))
         
@@ -532,8 +532,8 @@ class ConstruCode:
                 for span in div.find_elements(By.TAG_NAME, 'span'):
                     if span.get_attribute('role') == 'textbox':
                         nomeclatura:str|None = span.get_attribute('title')
-                disciplina[sigla] = nomeclatura
-                del sigla; del nomeclatura                    
+                disciplina[sigla] = nomeclatura #type: ignore
+                del sigla; del nomeclatura            #type: ignore         
         
         
         
