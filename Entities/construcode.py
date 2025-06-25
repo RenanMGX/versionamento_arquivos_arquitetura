@@ -476,7 +476,12 @@ class ConstruCode:
                     else:
                         url_img = links.get_attribute('src')
                         if url_img:
-                            emp_id = re.search(r'(?<=_O)[0-9]+(?=_)', url_img).group()#type: ignore
+                            if (emp_id:=re.search(r'(?<=_O)[0-9]+(?=_)', url_img)):
+                                emp_id = emp_id.group()
+                            else:
+                                #import pdb; pdb.set_trace()
+                                continue
+                            #emp_id = re.search(r'(?<=_O)[0-9]+(?=_)', url_img).group()
                             empreendimentos[emp.group()] = f"https://web.construcode.com.br/portal/going?url=%2FProjetos%2FIndex%3Fid%3D{emp_id}"
                         else:
                             Logs().register(status='Report', description=f"não foi possivel determinar o id do emprendimento {centro_custo_encontrado}",) #type: ignore

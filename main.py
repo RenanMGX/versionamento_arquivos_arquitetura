@@ -119,6 +119,6 @@ if __name__ == "__main__":
     
     
     
-    ExecuteAPP.start(email=crd['email'], password=crd['password'], path_ambiente=f'C:\\Users\\{os.getlogin()}\\Downloads')
+    ExecuteAPP.teste(email=crd['email'], password=crd['password'], path_ambiente=f'C:\\Users\\{os.getlogin()}\\Downloads')
     
         
