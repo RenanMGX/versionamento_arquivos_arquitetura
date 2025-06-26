@@ -27,33 +27,12 @@ import traceback
 from patrimar_dependencies.gemini_ia import ErrorIA
 from patrimar_dependencies.screenshot import screenshot
 from main import ExecuteAPP
+from Entities.processos import Processos
 import os
 
 # Disable errors if we are not connected to Maestro
 BotMaestroSDK.RAISE_NOT_CONNECTED = False #type: ignore
 
-class Processos:
-    @property
-    def total(self) -> int:
-        return self.__total
-    
-    @property
-    def processados(self) -> int:
-        return self.__processados
-    
-    @property
-    def falhas(self) -> int:
-        result = self.total - self.processados
-        return result if result >= 0 else 0
-    
-    def __init__(self, value:int) -> None:
-        self.__total:int = value
-        self.__processados:int = 0
-        
-    def add_processado(self, value:int=1):
-        for _ in range(value):
-            if (self.processados + 1) <= self.total:
-                self.__processados += 1
 
 class Execute:
     @staticmethod

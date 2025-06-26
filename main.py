@@ -20,6 +20,7 @@ from botcity.maestro import * #type: ignore
 from patrimar_dependencies.screenshot import screenshot
 from patrimar_dependencies.gemini_ia import ErrorIA
 import traceback
+from Entities.processos import Processos
 
 # def path_ambiente(param:str):
 #     if param == "qas":
@@ -34,11 +35,12 @@ class ExecuteAPP:
     #_path_ambiente = f'C:\\Users\\{os.getlogin()}\\Downloads'
     
     @staticmethod
-    def start(*,email:str, password:str, path_ambiente:str, maestro:BotMaestroSDK|None=None):
+    def start(*,email:str, password:str, path_ambiente:str, maestro:BotMaestroSDK|None=None, p:Processos=Processos(1)):
         files:FilesManipulation = FilesManipulation(path_ambiente, folder_teste=True)
         constru_code:ConstruCode = ConstruCode(file_manipulation=files, maestro=maestro, email=email, password=password)
         
         empreendimentos:list = constru_code.obter_empreendimentos()
+        p.total = len(empreendimentos)
         
         del files
         del constru_code
@@ -47,7 +49,7 @@ class ExecuteAPP:
             tasks: List[multiprocessing.context.Process] = []
             
             for empre in empreendimentos:
-                tasks.append(multiprocessing.Process(target=ExecuteAPP.extract, args=([empre],email, password, path_ambiente, maestro)))
+                tasks.append(multiprocessing.Process(target=ExecuteAPP.extract, args=([empre],email, password, path_ambiente, p, maestro)))
             
             for task in tasks:
                 task.start()
@@ -74,7 +76,7 @@ class ExecuteAPP:
                     pass
             
     @staticmethod
-    def extract(empreendimento:list, email:str, password:str, path_ambiente:str, maestro: BotMaestroSDK|None=None):
+    def extract(empreendimento:list, email:str, password:str, path_ambiente:str, p:Processos, maestro:BotMaestroSDK|None=None):
         try:
             files:FilesManipulation = FilesManipulation(path_ambiente, folder_teste=True, maestro=maestro)
             constru_code:ConstruCode = ConstruCode(file_manipulation=files, empreendimento=empreendimento[0], email=email, password=password, maestro=maestro)
@@ -84,6 +86,7 @@ class ExecuteAPP:
             ExecuteAPP.versionar(files)
                 
             print(P(f"Emprendimento {empreendimento} Finalizado!"))
+            p.add_processado()
         except Exception as error:
             print(traceback.format_exc())
             if maestro:
@@ -135,9 +138,5 @@ if __name__ == "__main__":
         name_file="ConstruCode.json"
     ).load()
     
-    
-    
-    
     ExecuteAPP.start(email=crd['email'], password=crd['password'], path_ambiente=f'C:\\Users\\{os.getlogin()}\\Downloads')
     
-        
