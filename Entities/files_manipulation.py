@@ -371,6 +371,8 @@ class FilesManipulation:
         return self.__folder_teste
     
     def __init__(self, base_path:str, *, maestro:BotMaestroSDK|None=None, folder_teste:bool=False) -> None:
+        if not isinstance(base_path, str):
+            raise Exception(f"A {base_path=} deve ser do tipo str e estam em '{type(base_path)}'")
         self.__base_path:str = base_path
         self.__config:Config_costumer = Config_costumer()
         self.__folder_teste:bool = folder_teste

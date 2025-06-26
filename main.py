@@ -17,6 +17,9 @@ import multiprocessing
 import multiprocessing.context
 import shutil
 from botcity.maestro import * #type: ignore
+from patrimar_dependencies.screenshot import screenshot
+from patrimar_dependencies.gemini_ia import ErrorIA
+import traceback
 
 # def path_ambiente(param:str):
 #     if param == "qas":
@@ -44,7 +47,7 @@ class ExecuteAPP:
             tasks: List[multiprocessing.context.Process] = []
             
             for empre in empreendimentos:
-                tasks.append(multiprocessing.Process(target=ExecuteAPP.extract, args=([empre],email, password, maestro)))
+                tasks.append(multiprocessing.Process(target=ExecuteAPP.extract, args=([empre],email, password, path_ambiente, maestro)))
             
             for task in tasks:
                 task.start()
@@ -72,15 +75,30 @@ class ExecuteAPP:
             
     @staticmethod
     def extract(empreendimento:list, email:str, password:str, path_ambiente:str, maestro: BotMaestroSDK|None=None):
-        files:FilesManipulation = FilesManipulation(path_ambiente, folder_teste=True)
-        constru_code:ConstruCode = ConstruCode(file_manipulation=files, empreendimento=empreendimento[0], email=email, password=password, maestro=maestro)
-        
-        constru_code.extrair_projetos(empreendimento)
+        try:
+            files:FilesManipulation = FilesManipulation(path_ambiente, folder_teste=True, maestro=maestro)
+            constru_code:ConstruCode = ConstruCode(file_manipulation=files, empreendimento=empreendimento[0], email=email, password=password, maestro=maestro)
             
-        ExecuteAPP.versionar(files)
-            
-        print(P(f"Emprendimento {empreendimento} Finalizado!"))
-        
+            constru_code.extrair_projetos(empreendimento)
+                
+            ExecuteAPP.versionar(files)
+                
+            print(P(f"Emprendimento {empreendimento} Finalizado!"))
+        except Exception as error:
+            print(traceback.format_exc())
+            if maestro:
+                ia_response = "Sem Resposta da IA"
+                try:
+                    token = maestro.get_credential(label="GeminiIA-Token-Default", key="token")
+                    if isinstance(token, str):
+                        ia_result = ErrorIA.error_message(
+                            token=token,
+                            message=traceback.format_exc()
+                        )
+                        ia_response = ia_result.replace("\n", " ")
+                except Exception as e:
+                    maestro.error(task_id=int(maestro.get_execution().task_id), exception=e)
+                maestro.error(task_id=int(maestro.get_execution().task_id), exception=error, screenshot=screenshot(), tags={"IA Response": ia_response})
         
     @staticmethod    
     def versionar(files:FilesManipulation, folder_teste=True) -> None:
@@ -98,7 +116,8 @@ class ExecuteAPP:
     def teste(*, email:str, password:str, path_ambiente:str, maestro: BotMaestroSDK|None=None):
         files:FilesManipulation = FilesManipulation(path_ambiente, folder_teste=True)
         constru_code:ConstruCode = ConstruCode(file_manipulation=files, email=email, password=password, maestro=maestro)
-        print(constru_code.obter_empreendimentos())
+        print(constru_code.teste())
+    
         
 if __name__ == "__main__":
     multiprocessing.freeze_support()
@@ -119,6 +138,6 @@ if __name__ == "__main__":
     
     
     
-    ExecuteAPP.teste(email=crd['email'], password=crd['password'], path_ambiente=f'C:\\Users\\{os.getlogin()}\\Downloads')
+    ExecuteAPP.start(email=crd['email'], password=crd['password'], path_ambiente=f'C:\\Users\\{os.getlogin()}\\Downloads')
     
         

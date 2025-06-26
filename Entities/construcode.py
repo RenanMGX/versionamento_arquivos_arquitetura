@@ -703,6 +703,14 @@ class ConstruCode:
     def obter_empreendimentos(self) -> list:
         emp:dict =  self.__listar_empreendimentos()
         return [re.search(r'[A-z]{1}[0-9]{3}',key).group() for key,value in emp.items()]#type: ignore
+    
+    
+    @navegar
+    def teste(self) -> None:
+        import pdb;pdb.set_trace()
+        self.nav.find_element('class name', 'draggable-wrapperDisciplina')
+        lista_disciplinas = self.nav.find_element('id', 'draggable-wrapperDisciplina')
+        lista_disciplinas.find_elements('class name', 'disciplinaTextTruncat')
         
 #https://www.construcode.com.br/Plantas/View?id=1516854
 if __name__ == "__main__":
