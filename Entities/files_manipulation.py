@@ -31,11 +31,15 @@ class EmpreendimentoFolder:
     
     @property
     def centro(self) -> str:
-        emp_folder:str = os.path.basename(self.emp_folder)
-        centro = re.search(r'[A-z]{1}[0-9]{3}', emp_folder)
-        if not centro is None:
-            return centro.group()
-        raise Exception(f"centro de custo não foi identificado do caminho {emp_folder}")
+        base_folder = self.emp_folder
+        for _ in range(len(os.path.split(base_folder))):
+            emp_folder:str = os.path.basename(base_folder)
+            base_folder = os.path.dirname(base_folder)
+            
+            centro = re.search(r'[A-z]{1}[0-9]{3}', emp_folder)
+            if not centro is None:
+                return centro.group()
+        raise Exception(f"centro de custo não foi identificado do caminho {self.emp_folder}")
         
     @property
     def folder_teste(self) -> str:
@@ -138,6 +142,8 @@ class EmpreendimentoFolder:
         for key,value in CODIGO_DISCIPLINA_HERDADO.items():
             if self.centro.upper() in key.upper():
                 SELECTED_CODIGO_DISCIPLINA = value
+                
+        
         
         try:
             disciplina = SELECTED_CODIGO_DISCIPLINA[codigo] #type: ignore
@@ -285,26 +291,30 @@ class EmpreendimentoFolder:
         return "None"
     
     def copy_file_to(self, *, original_file:str, target:str="", **kargs):
-        if target == "":
-            if not self.folder_teste:
-                target = self.base_path
-            else:
-                target = self.folder_teste
-        
-        caminho_para_salvar = self.__identificar_caminho_final(arquivo_original=original_file, target=target, **kargs)
-        
-        if not os.path.exists(os.path.dirname(caminho_para_salvar)):
-            os.makedirs(os.path.dirname(caminho_para_salvar))
-        
-        shutil.move(original_file, caminho_para_salvar)
-        #print(P(f"arquivo salvo no caminho {caminho_para_salvar}"))
-        if not self.__maestro is None:
-            self.__maestro.alert(
-                task_id=self.__maestro.get_execution().task_id,
-                title="Erro em Copy_file_to",
-                message=f"Arquivo salvo no caminho {caminho_para_salvar}",
-                alert_type=AlertType.INFO
-            )
+        try:
+            if target == "":
+                if not self.folder_teste:
+                    target = self.base_path
+                else:
+                    target = self.folder_teste
+            
+            caminho_para_salvar = self.__identificar_caminho_final(arquivo_original=original_file, target=target, **kargs)
+            
+            if not os.path.exists(os.path.dirname(caminho_para_salvar)):
+                os.makedirs(os.path.dirname(caminho_para_salvar))
+            
+            shutil.move(original_file, caminho_para_salvar)
+            #print(P(f"arquivo salvo no caminho {caminho_para_salvar}"))
+            if not self.__maestro is None:
+                self.__maestro.alert(
+                    task_id=self.__maestro.get_execution().task_id,
+                    title="Infor arquivo salvo",
+                    message=f"Arquivo salvo no caminho {caminho_para_salvar}",
+                    alert_type=AlertType.INFO
+                )
+        except Exception as error:
+            if not self.__maestro is None:
+                self.__maestro.error(task_id=int(self.__maestro.get_execution().task_id), exception=error)
         
     def versionar_arquivos(self):
         

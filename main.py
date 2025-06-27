@@ -66,7 +66,6 @@ class ExecuteAPP:
                     alert_type=AlertType.INFO
                 )
             
-            
         path = os.getcwd()
         for x in os.listdir(path):
             if "Download_Projects" in x:
