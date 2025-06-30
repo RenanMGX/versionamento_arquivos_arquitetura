@@ -47,6 +47,7 @@ class Execute:
         else:
             raise FileExistsError(f"o caminho '{base_path}' não foi encontrado!")
         
+        #maestro.delete_log(activity_label="construcode_debug")
         ExecuteAPP.start(maestro=maestro, email=email, password=password, path_ambiente=str(base_path))        
         
         p.add_processado()

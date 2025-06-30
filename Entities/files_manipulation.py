@@ -105,11 +105,26 @@ class EmpreendimentoFolder:
         Returns:
             str: caminho da pasta Projetos preparada
         """
-        emp_folder:str = os.path.join(path, (os.path.join(os.path.basename(os.path.dirname(self.emp_folder)), os.path.basename(self.emp_folder))))
+        emp_folder = self.emp_folder
+        temp_folder = os.path.normpath(emp_folder)
+        temp_folder = temp_folder.split("\\")
+        
+        list_temp_folder:list = []
+        if len(temp_folder) >= 2:
+            list_temp_folder.append(temp_folder.pop(-1))
+            list_temp_folder.append(temp_folder.pop(-1))
+            if "#CONSTRUCODE" in emp_folder:
+                list_temp_folder.append(temp_folder.pop(-1))
+        list_temp_folder.reverse()
+        emp_folder = "\\".join(list_temp_folder)
+            
+        
+        #result:str = os.path.join(path, (os.path.join(os.path.basename(os.path.dirname(emp_folder)), os.path.basename(emp_folder))))
+        result:str = os.path.join(path, emp_folder)
         
         #import pdb; pdb.set_trace()
         #emp_folder = os.path.join(emp_folder, f"{self.centro}-PROJETOS")
-        return emp_folder
+        return result
     
     def __identificar_caminho_final(self, *, arquivo_original:str, target:str, **kargs):
         target = self.__preparar_caminho(target)
@@ -128,6 +143,15 @@ class EmpreendimentoFolder:
         target = self.__montar_caminhos_etapa_projeto(target=target, codigo=codigo_etapa_arquivo)
         
         if not os.path.exists(target):
+            if not self.__maestro is None:
+                self.__maestro.new_log_entry(
+                    activity_label="construcode_debug",
+                    values={
+                        "caminho": target,
+                        "id": "6"
+                    }
+                )            
+            
             os.makedirs(target)
            
         return os.path.join(target, os.path.basename(arquivo_original))
@@ -225,6 +249,15 @@ class EmpreendimentoFolder:
             raise Exception(f"o arquivo '{path_file}' não foi encontrado")
         sub_path = os.path.join(os.path.dirname(path_file), sub_path)
         if not os.path.exists(sub_path):
+            if not self.__maestro is None:
+                self.__maestro.new_log_entry(
+                    activity_label="construcode_debug",
+                    values={
+                        "caminho": sub_path,
+                        "id": "1"
+                    }
+                )            
+            
             os.makedirs(sub_path)
         
         try:
@@ -252,6 +285,15 @@ class EmpreendimentoFolder:
 
                 rev_path:str = os.path.join(sub_path, key)
                 if not os.path.exists(rev_path):
+                    if not self.__maestro is None:
+                        self.__maestro.new_log_entry(
+                            activity_label="construcode_debug",
+                            values={
+                                "caminho": rev_path,
+                                "id": "2"
+                            }
+                        )            
+                    
                     os.makedirs(rev_path)
                 
                 for file in values:
@@ -301,6 +343,16 @@ class EmpreendimentoFolder:
             caminho_para_salvar = self.__identificar_caminho_final(arquivo_original=original_file, target=target, **kargs)
             
             if not os.path.exists(os.path.dirname(caminho_para_salvar)):
+                if not self.__maestro is None:
+                    self.__maestro.new_log_entry(
+                        activity_label="construcode_debug",
+                        values={
+                            "caminho": os.path.dirname(caminho_para_salvar),
+                            "id": "3"
+                        }
+                    )            
+                
+                
                 os.makedirs(os.path.dirname(caminho_para_salvar))
             
             shutil.move(original_file, caminho_para_salvar)
@@ -337,6 +389,15 @@ class EmpreendimentoFolder:
         if os.path.basename(path) in ETAPA_PROJETOS.values():            
             path_em_analise = os.path.join(path, analise)
             if not os.path.exists(path_em_analise):
+                if not self.__maestro is None:
+                    self.__maestro.new_log_entry(
+                        activity_label="construcode_debug",
+                        values={
+                            "caminho": path_em_analise,
+                            "id": "4"
+                        }
+                    )            
+                
                 os.makedirs(path_em_analise)
                 
             for file in files:
@@ -415,6 +476,15 @@ class FilesManipulation:
                 
             new_path = os.path.join(self.base_path, f"## Não Encontrados ##\\{centro_custo}")
             if not os.path.exists(new_path):
+                if not self.__maestro is None:
+                    self.__maestro.new_log_entry(
+                        activity_label="construcode_debug",
+                        values={
+                            "caminho": new_path.upper(),
+                            "id": "5"
+                        }
+                    )            
+                
                 os.makedirs(new_path.upper())
             
         # for folders in os.listdir(self.base_path):
