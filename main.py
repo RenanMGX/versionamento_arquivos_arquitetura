@@ -23,6 +23,7 @@ from patrimar_dependencies.screenshot import screenshot
 from patrimar_dependencies.gemini_ia import ErrorIA
 import traceback
 from Entities.processos import Processos
+from functools import partial
 
 # def path_ambiente(param:str):
 #     if param == "qas":
@@ -32,6 +33,11 @@ from Entities.processos import Processos
 #         return Config()['path_ambiente']['prd']
 #         #else:
 #         #    sys.exit()
+
+lock = None
+def init_worker(l):
+    global lock
+    lock = l
 
 class ExecuteAPP:
     #_path_ambiente = f'C:\\Users\\{os.getlogin()}\\Downloads'
@@ -47,18 +53,24 @@ class ExecuteAPP:
         del files
         del constru_code
         
-        lock:LockType = Lock()
+        l = Lock()
         if empreendimentos:
-            tasks: List[multiprocessing.context.Process] = []
             
-            for empre in empreendimentos:
-                tasks.append(multiprocessing.Process(target=ExecuteAPP.extract, args=([empre],email, password, path_ambiente, p, lock,maestro)))
+            f_partial = partial(ExecuteAPP.extract, email=email, password=password, path_ambiente=path_ambiente, p=p, maestro=maestro)
+            with multiprocessing.Pool(initializer= init_worker, initargs=(l,), processes=(multiprocessing.cpu_count() - 1)) as pool:
+                pool.map(f_partial, empreendimentos)
+            pool.close()
+            pool.join()
             
-            for task in tasks:
-                task.start()
+            # tasks: List[multiprocessing.context.Process] = []
+            # for empre in empreendimentos:
+            #     tasks.append(multiprocessing.Process(target=ExecuteAPP.extract, args=([empre],email, password, path_ambiente, p, lock,maestro)))
             
-            for task in tasks:
-                task.join()
+            # for task in tasks:
+            #     task.start()
+            
+            # for task in tasks:
+            #     task.join()
             
         else:
             if not maestro is None:
@@ -78,7 +90,11 @@ class ExecuteAPP:
                     pass
             
     @staticmethod
-    def extract(empreendimento:list, email:str, password:str, path_ambiente:str, p:Processos, lock:LockType|None=None, maestro:BotMaestroSDK|None=None):
+    def extract(empreendimento, email:str, password:str, path_ambiente:str, p:Processos, maestro:BotMaestroSDK|None=None):
+        global lock
+        
+        if not isinstance(empreendimento, list):
+            empreendimento = [empreendimento]
         try:
             files:FilesManipulation = FilesManipulation(path_ambiente, folder_teste=True, maestro=maestro, lock=lock)
             constru_code:ConstruCode = ConstruCode(file_manipulation=files, empreendimento=empreendimento[0], email=email, password=password, maestro=maestro, lock=lock)

@@ -88,7 +88,7 @@ class Config_costumer:
     
     def __init__(self, *, file_path:str=os.path.join(os.environ['json_folders_path'], 'config.json'), speak:bool=False, lock:Lock|None=None) -> None:
         self.__lock:Lock|None = lock
-        #print(P(str(self.__lock), color='green'), end=" <------------------------------------ Lock aqui\n")
+        print(P(str(self.__lock), color='green'), end=" <------------------------------------ Lock aqui\n")
         self.__speak:bool = speak
         if not file_path.endswith('.json'):
             file_path += '.json'
@@ -139,7 +139,7 @@ class Config_costumer:
     def __save(self) -> None:
         if not self.__lock is None:
             with self.__lock:
-                #print(P(("LOCK ATIVADO"), color='magenta'), end=" <------------------------------------ Lock aqui\n")
+                print(P(("LOCK ATIVADO"), color='magenta'), end=" <------------------------------------ Lock aqui\n")
                 with open(self.file_path, 'w', encoding='utf-8')as _file:
                     json.dump(self.param, _file, indent=4, ensure_ascii=False)
         else:        
