@@ -14,6 +14,8 @@ from typing import Literal, List
 import sys
 import traceback
 import multiprocessing
+from multiprocessing import Lock
+from multiprocessing.synchronize import Lock as LockType
 import multiprocessing.context
 import shutil
 from botcity.maestro import * #type: ignore
@@ -45,11 +47,12 @@ class ExecuteAPP:
         del files
         del constru_code
         
+        lock:LockType = Lock()
         if empreendimentos:
             tasks: List[multiprocessing.context.Process] = []
             
             for empre in empreendimentos:
-                tasks.append(multiprocessing.Process(target=ExecuteAPP.extract, args=([empre],email, password, path_ambiente, p, maestro)))
+                tasks.append(multiprocessing.Process(target=ExecuteAPP.extract, args=([empre],email, password, path_ambiente, p, lock,maestro)))
             
             for task in tasks:
                 task.start()
@@ -75,10 +78,10 @@ class ExecuteAPP:
                     pass
             
     @staticmethod
-    def extract(empreendimento:list, email:str, password:str, path_ambiente:str, p:Processos, maestro:BotMaestroSDK|None=None):
+    def extract(empreendimento:list, email:str, password:str, path_ambiente:str, p:Processos, lock:LockType|None=None, maestro:BotMaestroSDK|None=None):
         try:
-            files:FilesManipulation = FilesManipulation(path_ambiente, folder_teste=True, maestro=maestro)
-            constru_code:ConstruCode = ConstruCode(file_manipulation=files, empreendimento=empreendimento[0], email=email, password=password, maestro=maestro)
+            files:FilesManipulation = FilesManipulation(path_ambiente, folder_teste=True, maestro=maestro, lock=lock)
+            constru_code:ConstruCode = ConstruCode(file_manipulation=files, empreendimento=empreendimento[0], email=email, password=password, maestro=maestro, lock=lock)
             
             constru_code.extrair_projetos(empreendimento)
                 

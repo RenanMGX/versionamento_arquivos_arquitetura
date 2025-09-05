@@ -19,6 +19,7 @@ import traceback
 import pandas as pd
 import json
 from botcity.maestro import * # type: ignore
+from multiprocessing.synchronize import Lock as LockType
 
 
 #crd:dict = Credential(Config()['credential']['crd']).load()
@@ -133,7 +134,7 @@ class ConstruCode:
         return DISCIPLINAS_FILE_PATH
     
     
-    def __init__(self, *, maestro:BotMaestroSDK|None=None, file_manipulation:FilesManipulation, email:str, password:str, link:str="https://web.construcode.com.br/", date:datetime=datetime.now(), empreendimento:str=datetime.now().strftime('temp_%d%m%Y%H%M%S')) -> None:
+    def __init__(self, *, maestro:BotMaestroSDK|None=None, file_manipulation:FilesManipulation, email:str, password:str, link:str="https://web.construcode.com.br/", date:datetime=datetime.now(), empreendimento:str=datetime.now().strftime('temp_%d%m%Y%H%M%S'), lock:LockType|None=None) -> None:
         """
         Inicializa uma nova instância da classe ConstruCode.
 
@@ -159,7 +160,10 @@ class ConstruCode:
         self.__start_nav(self.base_link, empreendimento=empreendimento)
         
         self.__maestro:BotMaestroSDK|None = maestro
-        self.__config = Config_costumer()
+        if not lock is None:
+            self.__config = Config_costumer(lock=lock)
+        else:
+            self.__config = Config_costumer()
     
     @staticmethod   
     def navegar(f):

@@ -6,6 +6,7 @@ import shutil
 from .functions import tratar_nome_arquivo, P, remover_acentos, Config_costumer
 from datetime import datetime
 from botcity.maestro import * #type: ignore
+from multiprocessing.synchronize import Lock as LockType
 
 
 class EmpreendimentoFolder:
@@ -46,7 +47,7 @@ class EmpreendimentoFolder:
         return self.__folder_teste
     
     
-    def __init__(self, *, maestro:BotMaestroSDK|None, emp_folder:str, base_path:str, folder_teste:str="") -> None:
+    def __init__(self, *, maestro:BotMaestroSDK|None, emp_folder:str, base_path:str, folder_teste:str="", lock:LockType|None=None) -> None:
         """Metodo construtor ele ira listar os arquivos dentro da pasta
 
         Args:
@@ -62,7 +63,12 @@ class EmpreendimentoFolder:
         
         self.__emp_folder:str = emp_folder
         self.__folder_teste:str = folder_teste
-        self.__config:Config_costumer = Config_costumer()
+        if not lock is None:
+            self.__config = Config_costumer(lock=lock)
+        else:
+            self.__config = Config_costumer()
+        
+        
         
         if (self.__emp_folder.endswith("\\")) or (self.__emp_folder.endswith("/")):
             self.__emp_folder = self.__emp_folder[0:-1]
@@ -441,11 +447,17 @@ class FilesManipulation:
     def folder_teste(self) -> bool:
         return self.__folder_teste
     
-    def __init__(self, base_path:str, *, maestro:BotMaestroSDK|None=None, folder_teste:bool=False) -> None:
+    def __init__(self, base_path:str, *, maestro:BotMaestroSDK|None=None, folder_teste:bool=False, lock: LockType|None=None) -> None:
         if not isinstance(base_path, str):
             raise Exception(f"A {base_path=} deve ser do tipo str e estam em '{type(base_path)}'")
         self.__base_path:str = base_path
-        self.__config:Config_costumer = Config_costumer()
+        
+        if not lock is None:
+            self.__config = Config_costumer(lock=lock)
+        else:
+            self.__config = Config_costumer()
+        
+        
         self.__folder_teste:bool = folder_teste
         
         self.__maestro:BotMaestroSDK|None = maestro

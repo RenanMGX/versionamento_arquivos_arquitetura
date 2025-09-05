@@ -9,6 +9,7 @@ from typing import Dict, Literal
 import unicodedata
 from colorama import Fore
 from patrimar_dependencies.sharepointfolder import SharePointFolders
+from multiprocessing.synchronize import Lock
 
 def fechar_excel(path:str):
     try:
@@ -85,11 +86,13 @@ class Config_costumer:
         return self.__param
     
     
-    def __init__(self, *, file_path:str=os.path.join(os.environ['json_folders_path'], 'config.json'), speak:bool=False) -> None:        
+    def __init__(self, *, file_path:str=os.path.join(os.environ['json_folders_path'], 'config.json'), speak:bool=False, lock:Lock|None=None) -> None:
+        self.__lock:Lock|None = lock
+        #print(P(str(self.__lock), color='green'), end=" <------------------------------------ Lock aqui\n")
         self.__speak:bool = speak
         if not file_path.endswith('.json'):
             file_path += '.json'
-        
+         
         for _ in range(2):
             try:
                 if not os.path.exists(os.path.dirname(file_path)):
@@ -134,8 +137,14 @@ class Config_costumer:
         return self
     
     def __save(self) -> None:
-        with open(self.file_path, 'w', encoding='utf-8')as _file:
-            json.dump(self.param, _file, indent=4, ensure_ascii=False)
+        if not self.__lock is None:
+            with self.__lock:
+                #print(P(("LOCK ATIVADO"), color='magenta'), end=" <------------------------------------ Lock aqui\n")
+                with open(self.file_path, 'w', encoding='utf-8')as _file:
+                    json.dump(self.param, _file, indent=4, ensure_ascii=False)
+        else:        
+            with open(self.file_path, 'w', encoding='utf-8')as _file:
+                json.dump(self.param, _file, indent=4, ensure_ascii=False)
             
     def __load(self) -> None:
         with open(self.file_path, 'r', encoding='utf-8')as _file:
